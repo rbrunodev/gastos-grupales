@@ -1,0 +1,17 @@
+# dependencias
+/node_modules
+/.pnp
+.pnp.js
+
+# build
+/dist
+/build
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# sistema
+.DS_Store
