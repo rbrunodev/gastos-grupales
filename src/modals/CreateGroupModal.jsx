@@ -92,7 +92,7 @@ export default function CreateGroupModal({ open, onClose, onCreate }) {
           </div>
 
           {/* form */}
-          <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+          <form id="create-group-form" onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
             {/* Nombre del grupo */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

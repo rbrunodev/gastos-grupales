@@ -19,74 +19,69 @@ const GroupExpenseApp = () => {
         splitWith: []
     });
 
-  // Datos de ejemplo
-  const [groups, setGroups] = useState([
-    {
-      id: 1,
-      name: "Asado con amigos",
-      date: "2 días atrás",
-      members: ["Ana", "Bruno", "Carlos", "Diana"],
-      balance: 850,
-      expenses: [
-        { id: 1, description: "Carne y choripán", amount: 2400, paidBy: "Bruno", splitWith: ["Ana", "Bruno", "Carlos", "Diana"] },
-        { id: 2, description: "Bebidas", amount: 1800, paidBy: "Ana", splitWith: ["Ana", "Bruno", "Carlos", "Diana"] },
-        { id: 3, description: "Carbón", amount: 600, paidBy: "Carlos", splitWith: ["Ana", "Bruno", "Carlos", "Diana"] }
-      ]
-    },
-    {
-      id: 2,
-      name: "Viaje a Bariloche",
-      date: "1 semana atrás",
-      members: ["Laura", "Martín", "Sofia", "Pablo", "Elena"],
-      balance: 2340,
-      expenses: [
-        { id: 4, description: "Hospedaje", amount: 8000, paidBy: "Laura", splitWith: ["Laura", "Martín", "Sofia", "Pablo", "Elena"] },
-        { id: 5, description: "Nafta", amount: 3500, paidBy: "Martín", splitWith: ["Laura", "Martín", "Sofia", "Pablo"] },
-        { id: 6, description: "Cena restaurante", amount: 4200, paidBy: "Sofia", splitWith: ["Laura", "Martín", "Sofia", "Pablo", "Elena"] }
-      ]
-    },
-    {
-      id: 3,
-      name: "Regalo",
-      date: "2 semana atrás",
-      members: ["Paula", "Florencia", "Renata"],
-      balance: 0,
-      expenses: [
-        { id: 7, description: "Regalo", amount: 50000, paidBy: "Florencia", splitWith: ["Florencia", "Renata", "Paula"] },
-        { id: 8, description: "Transferencia", amount: 16667, paidBy: "Renata", splitWith: ["Florencia"] },
-        { id: 9, description: "Transferencia", amount: 16667, paidBy: "Paula", splitWith: ["Florencia"] }
-      ]
-    }
-  ]);
+    // Datos de ejemplo
+    const [groups, setGroups] = useState([
+        {
+        id: 1,
+        name: "Asado con amigos",
+        date: "2 días atrás",
+        members: ["Ana", "Bruno", "Carlos", "Diana"],
+        balance: 850,
+        expenses: [
+            { id: 1, description: "Carne y choripán", amount: 2400, paidBy: "Bruno", splitWith: ["Ana", "Bruno", "Carlos", "Diana"] },
+            { id: 2, description: "Bebidas", amount: 1800, paidBy: "Ana", splitWith: ["Ana", "Bruno", "Carlos", "Diana"] },
+            { id: 3, description: "Carbón", amount: 600, paidBy: "Carlos", splitWith: ["Ana", "Bruno", "Carlos", "Diana"] }
+        ]
+        },
+        {
+        id: 2,
+        name: "Viaje a Bariloche",
+        date: "1 semana atrás",
+        members: ["Laura", "Martín", "Sofia", "Pablo", "Elena"],
+        balance: 2340,
+        expenses: [
+            { id: 4, description: "Hospedaje", amount: 8000, paidBy: "Laura", splitWith: ["Laura", "Martín", "Sofia", "Pablo", "Elena"] },
+            { id: 5, description: "Nafta", amount: 3500, paidBy: "Martín", splitWith: ["Laura", "Martín", "Sofia", "Pablo"] },
+            { id: 6, description: "Cena restaurante", amount: 4200, paidBy: "Sofia", splitWith: ["Laura", "Martín", "Sofia", "Pablo", "Elena"] }
+        ]
+        },
+        {
+        id: 3,
+        name: "Regalo",
+        date: "2 semana atrás",
+        members: ["Paula", "Florencia", "Renata"],
+        balance: 0,
+        expenses: [
+            { id: 7, description: "Regalo", amount: 50000, paidBy: "Florencia", splitWith: ["Florencia", "Renata", "Paula"] },
+            { id: 8, description: "Transferencia", amount: 16667, paidBy: "Renata", splitWith: ["Florencia"] },
+            { id: 9, description: "Transferencia", amount: 16667, paidBy: "Paula", splitWith: ["Florencia"] }
+        ]
+        }
+    ]);
 
-  const [recentActivity, setRecentActivity] = useState([
-    { id: 1, text: "Carlos pagó $18.000", group: "Asado Amigos", time: "hace 2 horas" },
-    { id: 2, text: "Laura agregó 'Hospedaje' $8.000", group: "Viaje Bariloche", time: "ayer" },
-]);
+    const [recentActivity, setRecentActivity] = useState([
+        { id: 1, text: "Carlos pagó $18.000", group: "Asado Amigos", time: "hace 2 horas" },
+        { id: 2, text: "Laura agregó 'Hospedaje' $8.000", group: "Viaje Bariloche", time: "ayer" },
+    ]);
 
-const calculateIndividualBalance = (group) => {
-  const balances = {};
-  group.members.forEach(member => (balances[member] = 0));
+    const calculateIndividualBalance = (group) => {
+        const balances = {};
+        group.members.forEach(member => (balances[member] = 0));
 
-  group.expenses.forEach(expense => {
-    const splitAmount = expense.amount / expense.splitWith.length;
+        group.expenses.forEach(expense => {
+            const splitAmount = expense.amount / expense.splitWith.length;
+            balances[expense.paidBy] += expense.amount;
+            expense.splitWith.forEach(member => {
+            balances[member] -= splitAmount;
+            });
+        });
+        
+        Object.keys(balances).forEach(member => {
+            balances[member] = Math.round(balances[member] * 100) / 100;
+        });
 
-    // El que pagó suma a su balance
-    balances[expense.paidBy] += expense.amount;
-
-    // Todos los que participan restan la parte que les corresponde
-    expense.splitWith.forEach(member => {
-      balances[member] -= splitAmount;
-    });
-  });
-
-  // 🔑 Redondear para evitar residuos decimales
-  Object.keys(balances).forEach(member => {
-    balances[member] = Math.round(balances[member] * 100) / 100;
-  });
-
-  return balances;
-};
+        return balances;
+    };
 
 
   const addExpense = () => {
@@ -109,6 +104,41 @@ const calculateIndividualBalance = (group) => {
     setNewExpense({ description: '', amount: '', paidBy: '', splitWith: [] });
     setShowAddExpense(false);
   };
+
+  const calculateSettlements = (balances) => {
+    const debtors = [];
+    const creditors = [];
+
+    Object.entries(balances).forEach(([member, balance]) => {
+        if (balance < -1) {
+            debtors.push({ member, amount: -balance }); // debe
+        } else if (balance > 1) {
+            creditors.push({ member, amount: balance }); // le deben
+        }
+    });
+
+    const settlements = [];
+        while (debtors.length && creditors.length) {
+            const debtor = debtors[0];
+            const creditor = creditors[0];
+            const amount = Math.min(debtor.amount, creditor.amount);
+
+            settlements.push({
+                from: debtor.member,
+                to: creditor.member,
+                amount,
+            });
+
+            debtor.amount -= amount;
+            creditor.amount -= amount;
+
+            if (debtor.amount <= 1) debtors.shift();
+            if (creditor.amount <= 1) creditors.shift();
+        }
+
+        return settlements;
+    };
+
 
   const closeGroup = () => {
     setShowGroupClosed(true);
@@ -259,6 +289,32 @@ const calculateIndividualBalance = (group) => {
                             ))}
                         </div>
                         </div>
+
+                        {/* Liquidaciones */}
+                        <div className="bg-white rounded-2xl p-4 shadow-sm">
+                            <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
+                                <Users className="w-5 h-5 mr-2 text-purple-500" /> Quién paga a quién
+                            </h3>
+                            <div className="space-y-2">
+                                {(() => {
+                                const balances = calculateIndividualBalance(selectedGroup);
+                                const settlements = calculateSettlements(balances);
+
+                                return settlements.length > 0 ? (
+                                    settlements.map((s, i) => (
+                                    <p key={i} className="text-sm text-gray-700">
+                                        <span className="font-medium">{s.from}</span> le tiene que pagar{" "}
+                                        <span className="font-medium">${s.amount.toFixed(0)}</span> a{" "}
+                                        <span className="font-medium">{s.to}</span>
+                                    </p>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-green-600">🎉 Todos están saldados</p>
+                                );
+                                })()}
+                            </div>
+                        </div>
+
 
                         {/* Gastos */}
                         <div className="bg-white rounded-2xl p-4 shadow-sm">
