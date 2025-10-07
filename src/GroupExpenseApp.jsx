@@ -4,9 +4,11 @@ import Sidebar from "./components/Sidebar";
 import CreateGroupModal from "./modals/CreateGroupModal";
 import AddExpenseModal from "./modals/AddExpenseModal";
 import { useAuth } from './context/AuthContext';
+import { useGroups } from './context/GroupsContext';
 
 const GroupExpenseApp = () => {
     const { user } = useAuth();
+    const { groups, createGroup, updateGroup, deleteGroup, addExpense, deleteExpense, getGroupById, loading: groupsLoading } = useGroups();
     const [currentScreen, setCurrentScreen] = useState('home');
     const [selectedGroup, setSelectedGroup] = useState(null);
     const [showAddExpense, setShowAddExpense] = useState(false);
@@ -21,45 +23,7 @@ const GroupExpenseApp = () => {
         splitWith: []
     });
 
-    // Datos de ejemplo
-    const [groups, setGroups] = useState([
-        {
-        id: 1,
-        name: "Asado con amigos",
-        date: "2 días atrás",
-        members: ["Ana", "Bruno", "Carlos", "Diana"],
-        balance: 850,
-        expenses: [
-            { id: 1, description: "Carne y choripán", amount: 2400, paidBy: "Bruno", splitWith: ["Ana", "Bruno", "Carlos", "Diana"] },
-            { id: 2, description: "Bebidas", amount: 1800, paidBy: "Ana", splitWith: ["Ana", "Bruno", "Carlos", "Diana"] },
-            { id: 3, description: "Carbón", amount: 600, paidBy: "Carlos", splitWith: ["Ana", "Bruno", "Carlos", "Diana"] }
-        ]
-        },
-        {
-        id: 2,
-        name: "Viaje a Bariloche",
-        date: "1 semana atrás",
-        members: ["Laura", "Martín", "Sofia", "Pablo", "Elena"],
-        balance: 2340,
-        expenses: [
-            { id: 4, description: "Hospedaje", amount: 8000, paidBy: "Laura", splitWith: ["Laura", "Martín", "Sofia", "Pablo", "Elena"] },
-            { id: 5, description: "Nafta", amount: 3500, paidBy: "Martín", splitWith: ["Laura", "Martín", "Sofia", "Pablo"] },
-            { id: 6, description: "Cena restaurante", amount: 4200, paidBy: "Sofia", splitWith: ["Laura", "Martín", "Sofia", "Pablo", "Elena"] }
-        ]
-        },
-        {
-        id: 3,
-        name: "Regalo",
-        date: "2 semana atrás",
-        members: ["Paula", "Florencia", "Renata"],
-        balance: 0,
-        expenses: [
-            { id: 7, description: "Regalo", amount: 50000, paidBy: "Florencia", splitWith: ["Florencia", "Renata", "Paula"] },
-            { id: 8, description: "Transferencia", amount: 16667, paidBy: "Renata", splitWith: ["Florencia"] },
-            { id: 9, description: "Transferencia", amount: 16667, paidBy: "Paula", splitWith: ["Florencia"] }
-        ]
-        }
-    ]);
+
 
     const [recentActivity, setRecentActivity] = useState([
         { id: 1, text: "Carlos pagó $18.000", group: "Asado Amigos", time: "hace 2 horas" },
@@ -86,25 +50,26 @@ const GroupExpenseApp = () => {
     };
 
 
-    const addExpense = () => {
+    const handleAddExpense = async () => {
         if (!newExpense.description || !newExpense.amount || !newExpense.paidBy || !selectedGroup) return;
 
-        const expense = {
-        id: Date.now(),
-        description: newExpense.description,
-        amount: parseFloat(newExpense.amount),
-        paidBy: newExpense.paidBy,
-        splitWith: newExpense.splitWith.length > 0 ? newExpense.splitWith : selectedGroup.members
+        const expenseData = {
+            description: newExpense.description,
+            amount: parseFloat(newExpense.amount),
+            paidBy: newExpense.paidBy,
+            splitWith: newExpense.splitWith.length > 0 ? newExpense.splitWith : selectedGroup.members
         };
 
-        setGroups(groups.map(group => 
-        group.id === selectedGroup.id 
-            ? { ...group, expenses: [...group.expenses, expense] }
-            : group
-        ));
-
-        setNewExpense({ description: '', amount: '', paidBy: '', splitWith: [] });
-        setShowAddExpense(false);
+        const result = await addExpense(selectedGroup.id, expenseData);
+        
+        if (result.success) {
+            // Actualizar el grupo seleccionado con los datos más recientes
+            const updatedGroup = getGroupById(selectedGroup.id);
+            setSelectedGroup(updatedGroup);
+            
+            setNewExpense({ description: '', amount: '', paidBy: '', splitWith: [] });
+            setShowAddExpense(false);
+        }
     };
 
   
@@ -171,15 +136,27 @@ const GroupExpenseApp = () => {
         return net;
     };
 
-    const closeGroup = () => {
+    const closeGroup = async () => {
         setShowGroupClosed(true);
-        setTimeout(() => {
-        setGroups(groups.filter(g => g.id !== selectedGroup.id));
-        setShowGroupClosed(false);
-        setCurrentScreen('home');
-        setSelectedGroup(null);
+        setTimeout(async () => {
+            await deleteGroup(selectedGroup.id);
+            setShowGroupClosed(false);
+            setCurrentScreen('home');
+            setSelectedGroup(null);
         }, 3000);
     };
+
+    // Mostrar indicador de carga mientras se cargan los grupos
+    if (groupsLoading && groups.length === 0) {
+        return (
+            <div className="min-h-dvh flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Cargando tus grupos...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-dvh flex">
@@ -472,19 +449,13 @@ const GroupExpenseApp = () => {
                     open={showAddExpense}
                     onClose={() => setShowAddExpense(false)}
                     group={selectedGroup}               // 👈 se usa para miembros
-                    onAdd={(expense) => {
-                        // 1) actualizar groups
-                        setGroups((prev) => {
-                        const next = prev.map((g) =>
-                            g.id === selectedGroup.id
-                            ? { ...g, expenses: [...g.expenses, expense] }
-                            : g
-                        );
-                        // 2) refrescar selectedGroup con la versión actualizada
-                        const updated = next.find((g) => g.id === selectedGroup.id);
-                        setSelectedGroup(updated);
-                        return next;
-                        });
+                    onAdd={async (expense) => {
+                        const result = await addExpense(selectedGroup.id, expense);
+                        if (result.success) {
+                            // Refrescar selectedGroup con la versión actualizada
+                            const updatedGroup = getGroupById(selectedGroup.id);
+                            setSelectedGroup(updatedGroup);
+                        }
                     }}
                 />
 
@@ -492,11 +463,13 @@ const GroupExpenseApp = () => {
                     <CreateGroupModal
                         open={showCreateGroup}
                         onClose={() => setShowCreateGroup(false)}
-                        onCreate={(newGroup) => {
-                        setGroups((prev) => [...prev, newGroup]);
-                        // Navegar al detalle del grupo recién creado (opcional)
-                        setSelectedGroup(newGroup);
-                        setCurrentScreen("detail");
+                        onCreate={async (groupData) => {
+                            const result = await createGroup(groupData);
+                            if (result.success) {
+                                // Navegar al detalle del grupo recién creado (opcional)
+                                setSelectedGroup(result.group);
+                                setCurrentScreen("detail");
+                            }
                         }}
                     />
                 )}

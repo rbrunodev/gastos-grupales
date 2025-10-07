@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { GroupsProvider } from './context/GroupsContext';
 import GroupExpenseApp from './GroupExpenseApp';
 import Auth from './components/Auth';
 
@@ -14,7 +15,11 @@ function AppContent() {
     return <Auth />;
   }
 
-  return <GroupExpenseApp />;
+  return (
+    <GroupsProvider>
+      <GroupExpenseApp />
+    </GroupsProvider>
+  );
 }
 
 export default function App() {
