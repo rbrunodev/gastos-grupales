@@ -3,7 +3,7 @@ import { User, Lock, Eye, EyeOff, LogIn, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
-const Login = () => {
+const Login = ({ onSwitchToRegister }) => {
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -119,6 +119,20 @@ const Login = () => {
               )}
             </button>
           </form>
+
+          <div className="login-footer">
+            <p>
+              ¿No tienes una cuenta?{' '}
+              <button 
+                type="button" 
+                className="switch-button"
+                onClick={onSwitchToRegister}
+                disabled={loading}
+              >
+                Regístrate
+              </button>
+            </p>
+          </div>
 
           <div className="login-demo-info">
             <h4>Usuarios de demostración:</h4>

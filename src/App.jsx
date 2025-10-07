@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import GroupExpenseApp from './GroupExpenseApp';
-import Login from './components/Login';
+import Auth from './components/Auth';
 
 function AppContent() {
   const { user, checkAuthState } = useAuth();
@@ -11,7 +11,7 @@ function AppContent() {
   }, []);
 
   if (!user) {
-    return <Login />;
+    return <Auth />;
   }
 
   return <GroupExpenseApp />;

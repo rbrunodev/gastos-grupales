@@ -13,13 +13,22 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  // Cargar usuarios del localStorage o usar valores por defecto
+  const getUsers = () => {
+    const savedUsers = localStorage.getItem('users');
+    if (savedUsers) {
+      return JSON.parse(savedUsers);
+    }
+    // Usuarios de ejemplo por defecto
+    return [
+      { id: 1, username: 'admin', password: 'admin123', name: 'Administrador', email: 'admin@gastos.com' },
+      { id: 2, username: 'usuario', password: '123456', name: 'Usuario Demo', email: 'usuario@demo.com' },
+      { id: 3, username: 'test', password: 'test', name: 'Usuario de Prueba', email: 'test@prueba.com' }
+    ];
+  };
 
-  // Usuarios de ejemplo (en una aplicación real esto vendría de una API/base de datos)
-  const users = [
-    { id: 1, username: 'admin', password: 'admin123', name: 'Administrador' },
-    { id: 2, username: 'usuario', password: '123456', name: 'Usuario Demo' },
-    { id: 3, username: 'test', password: 'test', name: 'Usuario de Prueba' }
-  ];
+  const [users, setUsers] = useState(getUsers());
 
   const login = async (username, password) => {
     setLoading(true);
@@ -43,6 +52,49 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const register = async (userData) => {
+    setLoading(true);
+    
+    // Simular delay de API
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Validaciones
+    const existingUser = users.find(u => u.username === userData.username || u.email === userData.email);
+    
+    if (existingUser) {
+      setLoading(false);
+      if (existingUser.username === userData.username) {
+        return { success: false, error: 'El nombre de usuario ya está en uso' };
+      } else {
+        return { success: false, error: 'El email ya está registrado' };
+      }
+    }
+    
+    // Crear nuevo usuario
+    const newUser = {
+      id: users.length + 1,
+      username: userData.username,
+      password: userData.password,
+      name: `${userData.firstName} ${userData.lastName}`,
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName
+    };
+    
+    // Actualizar lista de usuarios
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    
+    // Auto-login después del registro
+    const { password: _, ...userWithoutPassword } = newUser;
+    setUser(userWithoutPassword);
+    localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+    
+    setLoading(false);
+    return { success: true };
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
@@ -58,6 +110,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
+    register,
     logout,
     loading,
     checkAuthState
