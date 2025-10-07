@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Home, UserPlus, Bell, Settings, HelpCircle, User, X } from "lucide-react";
+import { Home, UserPlus, Bell, Settings, HelpCircle, User, X, LogOut } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Sidebar({
   isOpen,             // 👈 controla visibilidad en mobile
@@ -11,6 +12,7 @@ export default function Sidebar({
   className = "",
 }) {
   const closeBtnRef = useRef(null);
+  const { user, logout } = useAuth();
 
   // Cerrar con ESC en mobile y enfocar el botón cerrar al abrir
   useEffect(() => {
@@ -158,6 +160,29 @@ export default function Sidebar({
                 </p>
               </div>
             </button>
+
+            <div className="border-t border-gray-100 my-2 mx-2" />
+
+            {/* User info and logout */}
+            <div className="px-2 py-2 rounded-2xl bg-gray-50">
+              <div className="flex items-center gap-3 px-2 py-2 mb-2">
+                <div className="w-10 h-10 rounded-full bg-blue-100 grid place-items-center">
+                  <User className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="text-left flex-1">
+                  <p className="font-medium text-gray-800 text-sm">{user?.name}</p>
+                  <p className="text-xs text-gray-500">@{user?.username}</p>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => { logout(); onToggle?.(); }}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 border border-red-100 hover:border-red-200 transition text-red-600"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="font-medium text-sm">Cerrar Sesión</span>
+              </button>
+            </div>
           </nav>
 
           {/* Footer */}
