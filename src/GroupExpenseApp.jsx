@@ -3,8 +3,10 @@ import { Users, Plus, ArrowLeft, DollarSign, Calendar, Bell, Check, Trash2, User
 import Sidebar from "./components/Sidebar";
 import CreateGroupModal from "./modals/CreateGroupModal";
 import AddExpenseModal from "./modals/AddExpenseModal";
+import { useAuth } from './context/AuthContext';
 
 const GroupExpenseApp = () => {
+    const { user } = useAuth();
     const [currentScreen, setCurrentScreen] = useState('home');
     const [selectedGroup, setSelectedGroup] = useState(null);
     const [showAddExpense, setShowAddExpense] = useState(false);
@@ -400,9 +402,28 @@ const GroupExpenseApp = () => {
                     {/* Otras pantallas */}
                     {currentScreen === 'profile' && (
                     <div className="bg-white rounded-2xl p-6 shadow-sm">
-                        <p className="text-gray-700">Nombre: Renata Bruno</p>
-                        <p className="text-gray-700">Email: renata@example.com</p>
-                        <p className="text-gray-500 text-sm mt-2">Acá podés sumar el formulario de perfil.</p>
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-16 h-16 rounded-full bg-blue-100 grid place-items-center">
+                                <User className="w-8 h-8 text-blue-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-800">{user?.name}</h2>
+                                <p className="text-gray-600">@{user?.username}</p>
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                                <h3 className="font-medium text-gray-800 mb-2">Información del Usuario</h3>
+                                <p className="text-gray-700"><strong>Nombre:</strong> {user?.name}</p>
+                                <p className="text-gray-700"><strong>Usuario:</strong> {user?.username}</p>
+                                <p className="text-gray-700"><strong>ID:</strong> {user?.id}</p>
+                            </div>
+                            
+                            <p className="text-gray-500 text-sm">
+                                Aquí puedes ver la información de tu perfil. En futuras versiones podrás editar estos datos.
+                            </p>
+                        </div>
                     </div>
                     )}
 
