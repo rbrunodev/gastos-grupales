@@ -1,482 +1,352 @@
 import React, { useState } from 'react';
-import { Users, Plus, ArrowLeft, DollarSign, Calendar, Bell, Check, Trash2, UserPlus, Menu, X, Home, Settings, HelpCircle, User } from 'lucide-react';
-import Sidebar from "./components/Sidebar";
-import CreateGroupModal from "./modals/CreateGroupModal";
-import AddExpenseModal from "./modals/AddExpenseModal";
-import { useAuth } from './context/AuthContext';
-import { useGroups } from './context/GroupsContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { GroupsProvider, useGroups } from './context/GroupsContext';
+import Auth from './components/Auth';
+import NavBar from './components/NavBar';
+import Sidebar from './components/Sidebar';
+import CreateGroupModal from './modals/CreateGroupModal';
+import AddExpenseModal from './modals/AddExpenseModal';
+import { Users, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
 
-const GroupExpenseApp = () => {
-    const { user } = useAuth();
-    const { groups, createGroup, updateGroup, deleteGroup, addExpense, deleteExpense, getGroupById, loading: groupsLoading } = useGroups();
-    const [currentScreen, setCurrentScreen] = useState('home');
-    const [selectedGroup, setSelectedGroup] = useState(null);
-    const [showAddExpense, setShowAddExpense] = useState(false);
-    const [showReminders, setShowReminders] = useState(false);
-    const [showGroupClosed, setShowGroupClosed] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [showCreateGroup, setShowCreateGroup] = useState(false);
-    const [newExpense, setNewExpense] = useState({
-        description: '',
-        amount: '',
-        paidBy: '',
-        splitWith: []
-    });
-
-
-
-    const [recentActivity, setRecentActivity] = useState([
-        { id: 1, text: "Carlos pagó $18.000", group: "Asado Amigos", time: "hace 2 horas" },
-        { id: 2, text: "Laura agregó 'Hospedaje' $8.000", group: "Viaje Bariloche", time: "ayer" },
-    ]);
-
-    const calculateIndividualBalance = (group) => {
-        const balances = {};
-        group.members.forEach(member => (balances[member] = 0));
-
-        group.expenses.forEach(expense => {
-            const splitAmount = expense.amount / expense.splitWith.length;
-            balances[expense.paidBy] += expense.amount;
-            expense.splitWith.forEach(member => {
-            balances[member] -= splitAmount;
-            });
-        });
-
-        Object.keys(balances).forEach(member => {
-            balances[member] = Math.round(balances[member] * 100) / 100;
-        });
-
-        return balances;
-    };
-
-
-    const handleAddExpense = async () => {
-        if (!newExpense.description || !newExpense.amount || !newExpense.paidBy || !selectedGroup) return;
-
-        const expenseData = {
-            description: newExpense.description,
-            amount: parseFloat(newExpense.amount),
-            paidBy: newExpense.paidBy,
-            splitWith: newExpense.splitWith.length > 0 ? newExpense.splitWith : selectedGroup.members
-        };
-
-        const result = await addExpense(selectedGroup.id, expenseData);
-        
-        if (result.success) {
-            // Actualizar el grupo seleccionado con los datos más recientes
-            const updatedGroup = getGroupById(selectedGroup.id);
-            setSelectedGroup(updatedGroup);
-            
-            setNewExpense({ description: '', amount: '', paidBy: '', splitWith: [] });
-            setShowAddExpense(false);
-        }
-    };
-
+const AppContent = () => {
+  const { user, loading: authLoading } = useAuth();
+  const { 
+    groups, 
+    loading: groupsLoading, 
+    getGroupById, 
+    calculateBalances, 
+    calculateSettlements, 
+    isGroupBalanced 
+  } = useGroups();
   
-    const calculatePairwiseDebts = (group) => {
-        if (!group) return [];
+  const [currentView, setCurrentView] = useState('groups');
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-        const totals = new Map(); // clave "deudor->pagador" -> monto (float)
+  // Si está cargando la autenticación, mostrar loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando aplicación...</p>
+        </div>
+      </div>
+    );
+  }
 
-        for (const exp of group.expenses) {
-            const { amount, paidBy, splitWith } = exp;
-            if (!splitWith?.length) continue;
+  // Si no hay usuario, mostrar login
+  if (!user) {
+    return <Auth />;
+  }
 
-            const share = amount / splitWith.length; // sin redondear; redondeamos al mostrar
+  const selectedGroup = selectedGroupId ? getGroupById(selectedGroupId) : null;
 
-            for (const member of splitWith) {
-            if (member === paidBy) continue; // el pagador no se debe a sí mismo
-            const key = `${member}->${paidBy}`;
-            totals.set(key, (totals.get(key) || 0) + share);
-            }
-        }
+  const handleViewGroup = (groupId) => {
+    setSelectedGroupId(groupId);
+    setCurrentView('groupDetail');
+    setSidebarOpen(false);
+  };
 
-        const rows = [];
-            for (const [key, amt] of totals.entries()) {
-                if (Math.abs(amt) < 0.5) continue; // filtra residuos de redondeo
-                const [from, to] = key.split("->");
-                rows.push({ from, to, amount: amt });
-            }
+  const handleBackToGroups = () => {
+    setCurrentView('groups');
+    setSelectedGroupId(null);
+  };
 
-            // Opcional: ordená por deudor y luego por pagador
-            rows.sort((a, b) => (a.from + a.to).localeCompare(b.from + b.to));
-            return rows;
-        };
+  const handleCreateGroup = () => {
+    setShowCreateGroupModal(true);
+    setSidebarOpen(false);
+  };
 
-        const consolidateMutualDebts = (rows, epsilon = 0.5) => {
-        const acc = new Map(); // clave canónica "a|b" (orden alfabético) -> suma con signo
+  const handleAddExpense = () => {
+    setShowAddExpenseModal(true);
+  };
 
-        for (const { from, to, amount } of rows) {
-            if (!amount) continue;
-            const a = from < to ? from : to;
-            const b = from < to ? to   : from;
-            const key = `${a}|${b}`;
+  const renderGroupsList = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-gray-900">Mis Grupos</h1>
+        <button
+          onClick={handleCreateGroup}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          Crear Grupo
+        </button>
+      </div>
 
-            // Si el orden canónico es (a,b), un "from=a → to=b" suma +amount,
-            // y un "from=b → to=a" suma -amount. Así se netean.
-            const signed = (from === a) ? amount : -amount;
-            acc.set(key, (acc.get(key) || 0) + signed);
-        }
+      {groupsLoading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando grupos...</p>
+        </div>
+      ) : groups.length === 0 ? (
+        <div className="text-center py-12">
+          <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No tienes grupos aún</h3>
+          <p className="text-gray-500 mb-4">Crea tu primer grupo para empezar a gestionar gastos compartidos</p>
+          <button
+            onClick={handleCreateGroup}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            Crear mi primer grupo
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {groups.map((group) => {
+            const balances = calculateBalances(group);
+            const totalExpenses = group.expenses?.reduce((sum, expense) => sum + expense.amount, 0) || 0;
+            const balanced = isGroupBalanced(group);
 
-        const net = [];
-        for (const [key, sum] of acc.entries()) {
-            if (Math.abs(sum) < epsilon) continue; // ignora residuos de redondeo
-            const [a, b] = key.split("|");
-            if (sum > 0) {
-            // a le debe a b
-            net.push({ from: a, to: b, amount: sum });
-            } else {
-            // b le debe a a
-            net.push({ from: b, to: a, amount: -sum });
-            }
-        }
+            return (
+              <div
+                key={group.id}
+                className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer border border-gray-100"
+                onClick={() => handleViewGroup(group.id)}
+              >
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900 line-clamp-2">{group.name}</h3>
+                    {balanced ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Balanceado
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                        Pendiente
+                      </span>
+                    )}
+                  </div>
 
-        // Opcional: ordená por deudor y pagador
-        net.sort((x, y) => (x.from + x.to).localeCompare(y.from + y.to));
-        return net;
-    };
+                  <div className="space-y-3">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Users className="h-4 w-4 mr-2" />
+                      <span>{group.members?.length || 0} miembros</span>
+                    </div>
 
-    const closeGroup = async () => {
-        setShowGroupClosed(true);
-        setTimeout(async () => {
-            await deleteGroup(selectedGroup.id);
-            setShowGroupClosed(false);
-            setCurrentScreen('home');
-            setSelectedGroup(null);
-        }, 3000);
-    };
+                    <div className="flex items-center text-sm text-gray-600">
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      <span>Total: ${totalExpenses.toFixed(2)}</span>
+                    </div>
 
-    // Mostrar indicador de carga mientras se cargan los grupos
-    if (groupsLoading && groups.length === 0) {
-        return (
-            <div className="min-h-dvh flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Cargando tus grupos...</p>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      <span>{group.expenses?.length || 0} gastos</span>
+                    </div>
+                  </div>
+
+                  {group.description && (
+                    <p className="mt-3 text-sm text-gray-500 line-clamp-2">{group.description}</p>
+                  )}
                 </div>
-            </div>
-        );
-    }
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderGroupDetail = () => {
+    if (!selectedGroup) return null;
+
+    const balances = calculateBalances(selectedGroup);
+    const settlements = calculateSettlements(balances);
+    const totalExpenses = selectedGroup.expenses?.reduce((sum, expense) => sum + expense.amount, 0) || 0;
+    const balanced = isGroupBalanced(selectedGroup);
 
     return (
-        <div className="min-h-dvh flex">
-            <Sidebar
-                isOpen={isSidebarOpen || typeof window !== 'undefined' && window.innerWidth >= 768} // fijo en md+
-                onToggle={() => setIsSidebarOpen(false)}
-                currentScreen={currentScreen}
-                onNavigate={(s) => setCurrentScreen(s)}
-                onCreateGroup={() => setShowCreateGroup(true)}
-                onShowReminders={() => setShowReminders(true)}
-            />
-
-            <main className="flex-1 min-w-0 overflow-x-hidden">
-                {/* Header sticky solo en mobile con botón de menú */}
-                <div className="flex items-center justify-between px-4 py-3">
-                    {/* Botón abrir SOLO si el sidebar está cerrado */}
-                    {currentScreen === 'detail' ? (
-                        <button
-                            onClick={() => setCurrentScreen("home")}
-                            className="p-2 rounded-xl hover:bg-gray-100"
-                            aria-label="Volver"
-                        >
-                            <ArrowLeft className="w-5 h-5 text-gray-600" />
-                        </button>
-                    ) : (
-                        !isSidebarOpen && ( <button
-                            onClick={() => setIsSidebarOpen(true)}
-                            className="p-2 rounded-xl bg-white shadow hover:bg-gray-50"
-                            aria-label="Abrir menú"
-                        >
-                            <Menu className="w-5 h-5 text-gray-600" />
-                        </button>)
-                    )}
-
-                    <h2 className="text-base font-semibold text-gray-800 truncate">
-                        {currentScreen === 'detail' ? (selectedGroup?.name || 'Detalle') : 'Mis Grupos'}
-                    </h2>
-
-                    {/* Espaciador para centrar el título */}
-                    <span className="w-9" />
-                </div>
-
-                {/* Contenedor central responsive: evita desbordes y centra el contenido */}
-                <div className="mx-auto w-full max-w-screen-sm md:max-w-screen-md lg:max-w-3xl px-4 md:px-6 py-4 space-y-6">
-                    {currentScreen === 'home' && (
-                        <div className="space-y-6">
-                            {/* lista de grupos */}
-                            <div className="grid gap-4">
-                                {groups.map(group => (
-                                    <div
-                                        key={group.id}
-                                        className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition"
-                                        onClick={() => { setSelectedGroup(group); setCurrentScreen('detail'); }}
-                                    >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-400 to-blue-400 grid place-items-center shrink-0">
-                                            <Users className="w-5 h-5 text-white" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <h3 className="font-semibold text-gray-800 truncate">{group.name}</h3>
-                                            <p className="text-xs text-gray-500 flex items-center">
-                                            <Calendar className="w-4 h-4 mr-1 shrink-0" /> {group.date}
-                                            </p>
-                                        </div>
-                                        </div>
-                                        <div className="text-right shrink-0">
-                                            <p className="text-orange-600 font-bold">${group.balance}</p>
-                                            <p className="text-[11px] text-gray-500">pendiente</p>
-                                        </div>
-                                    </div>
-                                    </div>
-                                ))}
-                                {/* Crear nuevo grupo */}
-                                <button
-                                    onClick={() => setShowCreateGroup(true)}
-                                    className="bg-white rounded-2xl p-4 shadow-sm border border-dashed border-gray-300 hover:bg-gray-50 transition flex items-center justify-center gap-2 text-gray-600"
-                                >
-                                    <Plus className="w-5 h-5" />
-                                    Crear nuevo grupo
-                                </button>
-                            </div>
-
-                            {/* Actividad reciente */}
-                            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                                <h3 className="font-semibold text-gray-800 mb-3">Actividad Reciente</h3>
-                                <div className="space-y-3">
-                                    {recentActivity.map(a => (
-                                        <div key={a.id} className="flex items-center justify-between">
-                                            <div className="min-w-0">
-                                            <p className="text-sm text-gray-800 truncate">{a.text}</p>
-                                            <p className="text-xs text-gray-500">{a.group} • {a.time}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {recentActivity.length === 0 && (
-                                        <p className="text-sm text-gray-500">No hay actividad por ahora.</p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {currentScreen === 'detail' && selectedGroup && (
-                    <div className="space-y-6">
-                        <div className="grid gap-4">
-                            {(() => {
-                                const balances = calculateIndividualBalance(selectedGroup);
-                                const isGroupBalanced = Object.values(balances).every(b => Math.abs(b) < 1);
-                                return isGroupBalanced ? (
-                                    <div className="bg-green-100 border border-green-200 rounded-xl p-3 text-center">
-                                    <p className="text-green-800 font-medium">¡Grupo equilibrado! 🎉</p>
-                                    </div>
-                                ) : (
-                                    <div className="bg-orange-100 border border-orange-200 rounded-xl p-3 text-center">
-                                    <p className="text-orange-800 font-medium">${selectedGroup.balance} pendientes</p>
-                                    </div>
-                                );
-                            })()}
-
-                            {/* Balances */}
-                            <div className="bg-white rounded-2xl p-4 shadow-sm">
-                            <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-                                <Users className="w-5 h-5 mr-2 text-blue-500" /> Balances
-                            </h3>
-                            <div className="space-y-2">
-                                {Object.entries(calculateIndividualBalance(selectedGroup)).map(([member, balance]) => (
-                                <div key={member} className="flex items-center justify-between">
-                                    <span className="text-gray-700">{member}</span>
-                                    <span
-                                    className={`font-medium ${
-                                        balance > 0 ? 'text-green-600' : balance < 0 ? 'text-red-600' : 'text-gray-600'
-                                    }`}
-                                    >
-                                    {balance > 0 ? `+$${balance.toFixed(0)}` : balance < 0 ? `-$${Math.abs(balance).toFixed(0)}` : '$0'}
-                                    </span>
-                                </div>
-                                ))}
-                            </div>
-                            </div>
-
-                            {/* Quién paga a quién (Neteado) */}
-                            <div className="bg-white rounded-2xl p-4 shadow-sm">
-                            <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-                                <Users className="w-5 h-5 mr-2 text-purple-500" /> Quién paga a quién
-                            </h3>
-
-                            {(() => {
-                                const pairwise = calculatePairwiseDebts(selectedGroup); // la que ya agregaste
-                                const netted   = consolidateMutualDebts(pairwise);
-
-                                return netted.length ? (
-                                <div className="space-y-2">
-                                    {netted.map((r, i) => (
-                                    <p key={i} className="text-sm text-gray-700">
-                                        <span className="font-medium">{r.from}</span> le tiene que pagar{" "}
-                                        <span className="font-medium">
-                                        ${Math.round(r.amount).toLocaleString("es-AR")}
-                                        </span>{" "}
-                                        a <span className="font-medium">{r.to}</span>
-                                    </p>
-                                    ))}
-                                </div>
-                                ) : (
-                                <p className="text-sm text-green-600">🎉 Todos están saldados</p>
-                                );
-                            })()}
-                            </div>
-
-
-
-
-                            {/* Gastos */}
-                            <div className="bg-white rounded-2xl p-4 shadow-sm">
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="font-semibold text-gray-800 flex items-center">
-                                <DollarSign className="w-5 h-5 mr-2 text-green-500" /> Gastos
-                                </h3>
-                                <button
-                                onClick={() => setShowAddExpense(true)}
-                                className="p-2 bg-gradient-to-r from-green-400 to-blue-400 text-white rounded-full"
-                                >
-                                <Plus className="w-4 h-4" />
-                                </button>
-                            </div>
-
-                            <div className="space-y-3">
-                                {selectedGroup.expenses.map(expense => (
-                                <div key={expense.id} className="border-l-4 border-blue-400 pl-3 py-2">
-                                    <div className="flex items-center justify-between gap-3">
-                                    <div className="min-w-0">
-                                        <p className="font-medium text-gray-800 break-words">{expense.description}</p>
-                                        <p className="text-sm text-gray-500">Pagó {expense.paidBy}</p>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <p className="font-bold text-gray-800">${expense.amount}</p>
-                                        <p className="text-xs text-gray-500">
-                                        ${(expense.amount / expense.splitWith.length).toFixed(0)} c/u
-                                        </p>
-                                    </div>
-                                    </div>
-                                </div>
-                                ))}
-                            </div>
-                            </div>
-
-                            {/* Cerrar grupo si corresponde */}
-                            {Object.values(calculateIndividualBalance(selectedGroup)).every(b => Math.abs(b) < 1) && (
-                            <button
-                                onClick={closeGroup}
-                                className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-4 rounded-2xl font-bold text-lg shadow-md"
-                            >
-                                🎉 Cerrar Grupo
-                            </button>
-                            )}
-                        </div>
-                    </div>
-                    )}
-
-                    {/* Otras pantallas */}
-                    {currentScreen === 'profile' && (
-                    <div className="bg-white rounded-2xl p-6 shadow-sm">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-16 h-16 rounded-full bg-blue-100 grid place-items-center">
-                                <User className="w-8 h-8 text-blue-600" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-800">{user?.name}</h2>
-                                <p className="text-gray-600">@{user?.username}</p>
-                            </div>
-                        </div>
-                        
-                        <div className="space-y-4">
-                            <div className="p-4 bg-gray-50 rounded-lg">
-                                <h3 className="font-medium text-gray-800 mb-2">Información del Usuario</h3>
-                                <p className="text-gray-700"><strong>Nombre:</strong> {user?.name}</p>
-                                <p className="text-gray-700"><strong>Usuario:</strong> {user?.username}</p>
-                                <p className="text-gray-700"><strong>ID:</strong> {user?.id}</p>
-                            </div>
-                            
-                            <p className="text-gray-500 text-sm">
-                                Aquí puedes ver la información de tu perfil. En futuras versiones podrás editar estos datos.
-                            </p>
-                        </div>
-                    </div>
-                    )}
-
-                    {currentScreen === 'settings' && (
-                        <div className="bg-white rounded-2xl p-6 shadow-sm">
-                            <p className="text-gray-700">Preferencias y ajustes (tema, moneda, idioma…)</p>
-                        </div>
-                    )}
-
-                    {currentScreen === 'help' && (
-                    <div className="bg-white rounded-2xl p-6 shadow-sm">
-                        <p className="text-gray-700">Centro de ayuda • FAQs • Contacto</p>
-                    </div>
-                    )}
-                </div>
-
-                {/* ---------- MODALES ---------- */}
-
-                {/* Recordatorios */}
-                {showReminders && (
-                    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50">
-                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm">
-                        <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-gray-800">Recordatorios</h3>
-                        <button onClick={() => setShowReminders(false)} className="text-gray-400">×</button>
-                        </div>
-                        <div className="space-y-3">
-                        <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
-                            <p className="text-sm font-medium text-orange-800">Carlos te debe $600</p>
-                            <p className="text-xs text-orange-600">Asado con amigos</p>
-                        </div>
-                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                            <p className="text-sm font-medium text-blue-800">Pablo te debe $700</p>
-                            <p className="text-xs text-blue-600">Viaje a Bariloche</p>
-                        </div>
-                        </div>
-                        <button className="w-full mt-4 bg-gradient-to-r from-green-400 to-blue-400 text-white py-3 rounded-xl font-medium">
-                        Enviar recordatorios amigables
-                        </button>
-                    </div>
-                    </div>
-                )}
-
-                {/* Agregar gasto (permite sin grupo) */}
-                <AddExpenseModal
-                    open={showAddExpense}
-                    onClose={() => setShowAddExpense(false)}
-                    group={selectedGroup}               // 👈 se usa para miembros
-                    onAdd={async (expense) => {
-                        const result = await addExpense(selectedGroup.id, expense);
-                        if (result.success) {
-                            // Refrescar selectedGroup con la versión actualizada
-                            const updatedGroup = getGroupById(selectedGroup.id);
-                            setSelectedGroup(updatedGroup);
-                        }
-                    }}
-                />
-
-                {showCreateGroup && (
-                    <CreateGroupModal
-                        open={showCreateGroup}
-                        onClose={() => setShowCreateGroup(false)}
-                        onCreate={async (groupData) => {
-                            const result = await createGroup(groupData);
-                            if (result.success) {
-                                // Navegar al detalle del grupo recién creado (opcional)
-                                setSelectedGroup(result.group);
-                                setCurrentScreen("detail");
-                            }
-                        }}
-                    />
-                )}
-            </main>
-
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+          <div>
+            <button
+              onClick={handleBackToGroups}
+              className="text-blue-600 hover:text-blue-700 mb-2 text-sm"
+            >
+              ← Volver a grupos
+            </button>
+            <h1 className="text-3xl font-bold text-gray-900">{selectedGroup.name}</h1>
+            {selectedGroup.description && (
+              <p className="text-gray-600 mt-1">{selectedGroup.description}</p>
+            )}
+          </div>
+          <button
+            onClick={handleAddExpense}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Agregar Gasto
+          </button>
         </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white p-4 rounded-lg shadow border border-gray-100">
+            <div className="flex items-center">
+              <Users className="h-5 w-5 text-blue-600 mr-2" />
+              <div>
+                <p className="text-sm font-medium text-gray-600">Miembros</p>
+                <p className="text-xl font-semibold text-gray-900">{selectedGroup.members?.length || 0}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow border border-gray-100">
+            <div className="flex items-center">
+              <DollarSign className="h-5 w-5 text-green-600 mr-2" />
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Gastos</p>
+                <p className="text-xl font-semibold text-gray-900">${totalExpenses.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow border border-gray-100">
+            <div className="flex items-center">
+              {balanced ? (
+                <TrendingUp className="h-5 w-5 text-green-600 mr-2" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-orange-600 mr-2" />
+              )}
+              <div>
+                <p className="text-sm font-medium text-gray-600">Estado</p>
+                <p className="text-xl font-semibold text-gray-900">
+                  {balanced ? 'Balanceado' : 'Pendiente'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Members */}
+        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Miembros</h2>
+          <div className="flex flex-wrap gap-2">
+            {selectedGroup.members?.map((member) => (
+              <span
+                key={member}
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+              >
+                {member}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Expenses */}
+        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Gastos Recientes</h2>
+          {selectedGroup.expenses?.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">No hay gastos registrados</p>
+          ) : (
+            <div className="space-y-3">
+              {selectedGroup.expenses?.map((expense) => (
+                <div key={expense.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900">{expense.description}</p>
+                    <p className="text-sm text-gray-600">
+                      Pagado por {expense.paid_by_username} • Dividido entre {expense.splitBetween?.join(', ')}
+                    </p>
+                  </div>
+                  <span className="font-semibold text-gray-900">${expense.amount.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Balances */}
+        {Object.keys(balances).length > 0 && (
+          <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Balances</h2>
+            <div className="space-y-2">
+              {Object.entries(balances).map(([member, balance]) => (
+                <div key={member} className="flex justify-between items-center">
+                  <span className="font-medium text-gray-900">{member}</span>
+                  <span className={`font-semibold ${balance > 0 ? 'text-green-600' : balance < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                    ${Math.abs(balance).toFixed(2)} {balance > 0 ? 'a favor' : balance < 0 ? 'debe' : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Settlements */}
+        {settlements.length > 0 && (
+          <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Liquidaciones Sugeridas</h2>
+            <div className="space-y-2">
+              {settlements.map((settlement, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                  <span className="text-gray-900">
+                    <strong>{settlement.from}</strong> debe pagar a <strong>{settlement.to}</strong>
+                  </span>
+                  <span className="font-semibold text-blue-600">${settlement.amount.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <NavBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        onCreateGroup={handleCreateGroup}
+        selectedGroupId={selectedGroupId}
+        onViewGroup={handleViewGroup}
+      />
+
+      <main className="pt-16 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {currentView === 'groups' && renderGroupsList()}
+          {currentView === 'groupDetail' && renderGroupDetail()}
+        </div>
+      </main>
+
+      {/* Modales */}
+      {showCreateGroupModal && (
+        <CreateGroupModal
+          onClose={() => setShowCreateGroupModal(false)}
+          onGroupCreated={() => {
+            setShowCreateGroupModal(false);
+            // Los grupos se recargan automáticamente por el contexto
+          }}
+        />
+      )}
+
+      {showAddExpenseModal && selectedGroup && (
+        <AddExpenseModal
+          group={selectedGroup}
+          onClose={() => setShowAddExpenseModal(false)}
+          onExpenseAdded={() => {
+            setShowAddExpenseModal(false);
+            // Los gastos se recargan automáticamente por el contexto
+          }}
+        />
+      )}
+    </div>
+  );
 };
 
-export default GroupExpenseApp
+const GroupExpenseApp = () => {
+  return (
+    <AuthProvider>
+      <GroupsProvider>
+        <AppContent />
+      </GroupsProvider>
+    </AuthProvider>
+  );
+};
+
+export default GroupExpenseApp;
