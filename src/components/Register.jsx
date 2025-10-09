@@ -15,6 +15,7 @@ const Register = ({ onSwitchToLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const { register, loading } = useAuth();
 
   const handleChange = (e) => {
@@ -22,8 +23,8 @@ const Register = ({ onSwitchToLogin }) => {
       ...formData,
       [e.target.name]: e.target.value
     });
-    // Limpiar error cuando el usuario empiece a escribir
     if (error) setError('');
+    if (success) setSuccess('');
   };
 
   const validateForm = () => {
@@ -45,7 +46,6 @@ const Register = ({ onSwitchToLogin }) => {
       return 'El nombre de usuario debe tener al menos 3 caracteres';
     }
     
-    // Validación de email básica
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return 'Por favor, ingresa un email válido';
@@ -71,10 +71,23 @@ const Register = ({ onSwitchToLogin }) => {
       return;
     }
 
-    const result = await register(formData);
-    
-    if (!result.success) {
-      setError(result.error);
+    try {
+      const result = await register(formData);
+      
+      if (result && result.success) {
+        setSuccess('¡Cuenta creada exitosamente! Redirigiendo...');
+        setError('');
+        setTimeout(() => {
+          onSwitchToLogin();
+        }, 2000);
+      } else {
+        setError(result?.error || 'Error al crear la cuenta. Inténtalo de nuevo.');
+        setSuccess('');
+      }
+    } catch (err) {
+      console.error('Error en el registro:', err);
+      setError('Error de conexión. Verifica tu conexión a internet.');
+      setSuccess('');
     }
   };
 
@@ -225,6 +238,12 @@ const Register = ({ onSwitchToLogin }) => {
               </div>
             )}
 
+            {success && (
+              <div className="success-message">
+                {success}
+              </div>
+            )}
+
             <button 
               type="submit" 
               className="register-button"
@@ -263,4 +282,5 @@ const Register = ({ onSwitchToLogin }) => {
   );
 };
 
+// IMPORTANTE: Asegúrate de que esta línea esté al final del archivo
 export default Register;

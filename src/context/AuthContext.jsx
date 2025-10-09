@@ -6,10 +6,9 @@ const API_URL = 'http://localhost:3001/api';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Función para verificar el estado de autenticación al cargar
   const checkAuthState = () => {
     try {
       const savedUser = localStorage.getItem('currentUser');
@@ -20,18 +19,16 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Error al cargar usuario guardado:', error);
       localStorage.removeItem('currentUser');
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Verificar estado al montar el componente
   useEffect(() => {
     checkAuthState();
   }, []);
 
   const login = async (username, password) => {
     try {
+      setLoading(true);
       setError(null);
       
       const response = await fetch(`${API_URL}/auth/login`, {
@@ -49,17 +46,20 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('currentUser', JSON.stringify(data.user));
         return { success: true };
       } else {
-        return { success: false, message: data.message || 'Error de autenticación' };
+        return { success: false, error: data.message || 'Error de autenticación' };
       }
     } catch (error) {
       console.error('Error en login:', error);
       setError('Error de conexión con el servidor');
-      return { success: false, message: 'Error de conexión' };
+      return { success: false, error: 'Error de conexión' };
+    } finally {
+      setLoading(false);
     }
   };
 
-  const register = async (username, password, email) => {
+  const register = async (userData) => {
     try {
+      setLoading(true);
       setError(null);
       
       const response = await fetch(`${API_URL}/auth/register`, {
@@ -67,22 +67,33 @@ export const AuthProvider = ({ children }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password, email }),
+        body: JSON.stringify({
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          username: userData.username,
+          email: userData.email,
+          password: userData.password
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { success: false, error: errorData.message || 'Error en el servidor' };
+      }
 
       const data = await response.json();
 
       if (data.success) {
-        setUser(data.user);
-        localStorage.setItem('currentUser', JSON.stringify(data.user));
-        return { success: true };
+        // No logueamos automáticamente, solo confirmamos el registro
+        return { success: true, message: 'Usuario registrado exitosamente' };
       } else {
-        return { success: false, message: data.message || 'Error en el registro' };
+        return { success: false, error: data.message || 'Error en el registro' };
       }
     } catch (error) {
       console.error('Error en registro:', error);
-      setError('Error de conexión con el servidor');
-      return { success: false, message: 'Error de conexión' };
+      return { success: false, error: 'Error de conexión con el servidor' };
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,19 +110,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     loading,
     error,
-    checkAuthState // Exportar la función por si se necesita
+    checkAuthState
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando aplicación...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <AuthContext.Provider value={value}>
