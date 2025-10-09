@@ -24,21 +24,31 @@ const Login = ({ onSwitchToRegister }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('Formulario enviado con:', formData); // DEBUG
+    
     if (!formData.username || !formData.password) {
+      console.log('Campos vacíos, estableciendo error'); // DEBUG
       setError('Por favor, completa todos los campos');
       return;
     }
 
+    console.log('Intentando hacer login...'); // DEBUG
     const result = await login(formData.username, formData.password);
     
+    console.log('Resultado del login:', result); // DEBUG
+    
     if (!result.success) {
-      setError(result.error);
+      console.log('Login falló, estableciendo error:', result.error); // DEBUG
+      setError(result.error || 'Usuario o contraseña incorrectos');
     }
   };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
+  // DEBUG: Mostrar estado del error
+  console.log('Estado actual del error:', error);
 
   return (
     <div className="login-container">
@@ -95,6 +105,7 @@ const Login = ({ onSwitchToRegister }) => {
               </div>
             </div>
 
+            {/* MENSAJE DE ERROR */}
             {error && (
               <div className="error-message">
                 {error}
