@@ -325,14 +325,320 @@ const AppContent = () => {
     );
   };
 
-  const renderProfileView = () => (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-600">Configuración del perfil próximamente...</p>
+  const renderProfileView = () => {
+    if (!user) return null;
+
+    // Calcular estadísticas financieras del usuario
+    const calculateUserFinancialStats = () => {
+      let totalOwed = 0;      // Cuánto le deben al usuario
+      let totalOwes = 0;      // Cuánto debe el usuario
+      let totalExpenses = 0;  // Total de gastos en todos los grupos
+      let totalGroupsWithDebts = 0;
+      
+      groups.forEach(group => {
+        const balances = calculateBalances(group);
+        const userBalance = balances[user.username] || 0;
+        
+        if (userBalance > 0) {
+          totalOwed += userBalance;
+        } else if (userBalance < 0) {
+          totalOwes += Math.abs(userBalance);
+        }
+        
+        if (userBalance !== 0) {
+          totalGroupsWithDebts++;
+        }
+        
+        // Sumar gastos totales del grupo
+        totalExpenses += group.expenses?.reduce((sum, expense) => sum + expense.amount, 0) || 0;
+      });
+
+      return {
+        totalOwed,
+        totalOwes,
+        totalExpenses,
+        netBalance: totalOwed - totalOwes,
+        totalGroupsWithDebts,
+        totalGroups: groups.length,
+        totalTransactions: groups.reduce((total, group) => total + (group.expenses?.length || 0), 0)
+      };
+    };
+
+    const financialStats = calculateUserFinancialStats();
+
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
+        
+        {/* Información del Usuario */}
+        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+          <div className="flex items-center mb-6">
+            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mr-4">
+              <span className="text-2xl font-bold text-white">
+                {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
+              </span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900">
+                {user.full_name || user.username || 'Usuario'}
+              </h2>
+              <p className="text-gray-600">@{user.username}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Información Básica */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Información Básica</h3>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Nombre completo:</span>
+                  <span className="text-sm text-gray-900">
+                    {user.full_name || 'No especificado'}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Nombre de usuario:</span>
+                  <span className="text-sm text-gray-900">@{user.username}</span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">ID de usuario:</span>
+                  <span className="text-sm text-gray-500 font-mono">{user.id}</span>
+                </div>
+                
+                {user.email && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-sm font-medium text-gray-600">Email:</span>
+                    <span className="text-sm text-gray-900">{user.email}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Estadísticas Básicas */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Estadísticas Generales</h3>
+              
+              <div className="space-y-3">
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Users className="h-5 w-5 text-blue-600 mr-2" />
+                      <span className="text-sm font-medium text-blue-900">Grupos</span>
+                    </div>
+                    <span className="text-lg font-bold text-blue-600">{financialStats.totalGroups}</span>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <DollarSign className="h-5 w-5 text-green-600 mr-2" />
+                      <span className="text-sm font-medium text-green-900">Total en Gastos</span>
+                    </div>
+                    <span className="text-lg font-bold text-green-600">
+                      ${financialStats.totalExpenses.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <TrendingUp className="h-5 w-5 text-purple-600 mr-2" />
+                      <span className="text-sm font-medium text-purple-900">Total Transacciones</span>
+                    </div>
+                    <span className="text-lg font-bold text-purple-600">
+                      {financialStats.totalTransactions}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Resumen Financiero */}
+        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-6">Resumen Financiero</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Dinero que te deben */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-green-700">Te deben</span>
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              </div>
+              <div className="text-2xl font-bold text-green-600">
+                ${financialStats.totalOwed.toFixed(2)}
+              </div>
+              <p className="text-xs text-green-600 mt-1">A tu favor</p>
+            </div>
+
+            {/* Dinero que debes */}
+            <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-lg p-4 border border-red-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-red-700">Debes</span>
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              </div>
+              <div className="text-2xl font-bold text-red-600">
+                ${financialStats.totalOwes.toFixed(2)}
+              </div>
+              <p className="text-xs text-red-600 mt-1">Pendiente de pago</p>
+            </div>
+
+            {/* Balance neto */}
+            <div className={`bg-gradient-to-br rounded-lg p-4 border ${
+              financialStats.netBalance > 0 
+                ? 'from-blue-50 to-indigo-50 border-blue-200' 
+                : financialStats.netBalance < 0 
+                  ? 'from-orange-50 to-amber-50 border-orange-200'
+                  : 'from-gray-50 to-slate-50 border-gray-200'
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-sm font-medium ${
+                  financialStats.netBalance > 0 
+                    ? 'text-blue-700' 
+                    : financialStats.netBalance < 0 
+                      ? 'text-orange-700'
+                      : 'text-gray-700'
+                }`}>
+                  Balance Neto
+                </span>
+                <div className={`w-2 h-2 rounded-full ${
+                  financialStats.netBalance > 0 
+                    ? 'bg-blue-500' 
+                    : financialStats.netBalance < 0 
+                      ? 'bg-orange-500'
+                      : 'bg-gray-500'
+                }`}></div>
+              </div>
+              <div className={`text-2xl font-bold ${
+                financialStats.netBalance > 0 
+                  ? 'text-blue-600' 
+                  : financialStats.netBalance < 0 
+                    ? 'text-orange-600'
+                    : 'text-gray-600'
+              }`}>
+                {financialStats.netBalance >= 0 ? '+' : ''}${financialStats.netBalance.toFixed(2)}
+              </div>
+              <p className={`text-xs mt-1 ${
+                financialStats.netBalance > 0 
+                  ? 'text-blue-600' 
+                  : financialStats.netBalance < 0 
+                    ? 'text-orange-600'
+                    : 'text-gray-600'
+              }`}>
+                {financialStats.netBalance > 0 
+                  ? 'En positivo' 
+                  : financialStats.netBalance < 0 
+                    ? 'En negativo'
+                    : 'Balanceado'
+                }
+              </p>
+            </div>
+
+            {/* Grupos con deudas */}
+            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg p-4 border border-purple-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-purple-700">Grupos Activos</span>
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              </div>
+              <div className="text-2xl font-bold text-purple-600">
+                {financialStats.totalGroupsWithDebts}
+              </div>
+              <p className="text-xs text-purple-600 mt-1">
+                de {financialStats.totalGroups} total
+              </p>
+            </div>
+          </div>
+
+          {/* Indicador de estado general */}
+          <div className="mt-6 p-4 rounded-lg bg-gray-50 border">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Estado Financiero General</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Basado en todos tus grupos
+                </p>
+              </div>
+              <div className="flex items-center">
+                {financialStats.netBalance > 0 ? (
+                  <>
+                    <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                    <span className="text-sm font-medium text-green-700">Favorable</span>
+                  </>
+                ) : financialStats.netBalance < 0 ? (
+                  <>
+                    <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+                    <span className="text-sm font-medium text-orange-700">Debes dinero</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-3 h-3 bg-gray-500 rounded-full mr-2"></div>
+                    <span className="text-sm font-medium text-gray-700">Balanceado</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Próximas Funcionalidades */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-6 w-6 text-blue-600" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-lg font-medium text-blue-900 mb-2">
+                Próximamente: Edición de Perfil
+              </h3>
+              <p className="text-blue-800 mb-4">
+                Estamos trabajando en nuevas funcionalidades para tu perfil. Pronto podrás:
+              </p>
+              <ul className="list-disc list-inside text-blue-700 space-y-1 text-sm">
+                <li>Cambiar tu nombre y información personal</li>
+                <li>Actualizar tu foto de perfil</li>
+                <li>Configurar preferencias de notificaciones</li>
+                <li>Gestionar la privacidad de tu cuenta</li>
+                <li>Ver un historial detallado de tus gastos</li>
+                <li>Exportar reportes financieros</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Acciones */}
+        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Acciones de Cuenta</h3>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button 
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors cursor-not-allowed"
+              disabled
+            >
+              Editar Perfil (Próximamente)
+            </button>
+            <button 
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors cursor-not-allowed"
+              disabled
+            >
+              Cambiar Contraseña (Próximamente)
+            </button>
+            <button 
+              className="border border-red-300 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors cursor-not-allowed"
+              disabled
+            >
+              Eliminar Cuenta (Próximamente)
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderSettingsView = () => (
     <div className="space-y-6">
