@@ -81,38 +81,48 @@ export const GroupsProvider = ({ children }) => {
     }
   };
 
-  const addExpense = async (groupId, description, amount, paidByUsername, splitBetween) => {
-    if (!user?.id) {
-      return { success: false, message: 'Usuario no autenticado' };
-    }
-
+  const addExpense = async (groupId, description, amount, paidBy, splitWith) => {
     try {
-      const response = await fetch(`${API_URL}/expenses`, {
+      console.log('📤 Sending expense data:', {
+        groupId,
+        description,
+        amount,
+        paidBy,
+        splitWith
+      });
+
+      const response = await fetch(`${API_URL}/expenses`, {  // ← Quitar el /api/ duplicado
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           grupo_id: groupId,
-          description,
-          amount: parseFloat(amount),
-          paid_by_username: paidByUsername,
-          split_between: splitBetween
-        }),
+          description: description,
+          amount: amount,
+          paid_by_username: paidBy,
+          split_between: splitWith
+        })
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        // Recargar grupos
-        await loadUserGroups();
-        return { success: true };
-      } else {
-        return { success: false, message: data.error || 'Error agregando el gasto' };
+      console.log('📥 Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('❌ Server error response:', errorData);
+        throw new Error(`Server error: ${response.status} - ${errorData}`);
       }
+
+      const result = await response.json();
+      console.log('✅ Expense added:', result);
+      
+      // Recargar grupos después de agregar el gasto
+      await loadUserGroups();
+      
+      return { success: true, data: result };
     } catch (error) {
-      console.error('Error agregando gasto:', error);
-      return { success: false, message: 'Error de conexión' };
+      console.error('💥 Add expense error:', error);
+      return { success: false, message: error.message };
     }
   };
 
