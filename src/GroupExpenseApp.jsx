@@ -25,6 +25,7 @@ const AppContent = () => {
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedFaq, setExpandedFaq] = useState(null); // Mover el estado aquí
 
   // Si está cargando la autenticación, mostrar loading
   if (authLoading) {
@@ -649,92 +650,97 @@ const AppContent = () => {
     </div>
   );
 
-  const renderHelpView = () => (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Ayuda y Soporte</h1>
-      
-      {/* FAQ Section */}
-      <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">Preguntas Frecuentes</h2>
+  const renderHelpView = () => {
+    const toggleFaq = (index) => {
+      setExpandedFaq(expandedFaq === index ? null : index);
+    };
+
+    const faqs = [
+      {
+        question: "¿Cómo funciona el cálculo de balances?",
+        answer: "El sistema calcula automáticamente cuánto debe o le deben a cada miembro del grupo. Cuando agregas un gasto, se divide equitativamente entre los miembros seleccionados, y el balance muestra la diferencia entre lo que cada persona pagó y lo que debería pagar."
+      },
+      {
+        question: "¿Qué son las liquidaciones sugeridas?",
+        answer: "Las liquidaciones sugeridas te muestran la forma más eficiente de saldar las deudas del grupo. En lugar de que cada persona pague a todas las demás, el sistema calcula el mínimo número de transferencias necesarias para que todos queden a mano."
+      },
+      {
+        question: "¿Puedo agregar miembros después de crear un grupo?",
+        answer: "Actualmente, los miembros se agregan al momento de crear el grupo. La funcionalidad para agregar o quitar miembros después de la creación estará disponible en futuras actualizaciones."
+      },
+      {
+        question: "¿Los datos están seguros?",
+        answer: "Sí, todos los datos se almacenan de forma segura y solo son accesibles por ti y los miembros de tus grupos. Utilizamos medidas de seguridad estándar para proteger tu información."
+      },
+      {
+        question: "¿Puedo editar o eliminar gastos?",
+        answer: "Esta funcionalidad estará disponible próximamente. Por ahora, si necesitas hacer correcciones, puedes crear un nuevo gasto con el monto ajustado."
+      }
+    ];
+
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-gray-900">Ayuda y Soporte</h1>
         
-        <div className="space-y-6">
-          {/* FAQ 1 */}
-          <div className="border-b border-gray-200 pb-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              ¿Cómo funciona el cálculo de balances?
-            </h3>
-            <p className="text-gray-600">
-              El sistema calcula automáticamente cuánto debe o le deben a cada miembro del grupo. 
-              Cuando agregas un gasto, se divide equitativamente entre los miembros seleccionados, 
-              y el balance muestra la diferencia entre lo que cada persona pagó y lo que debería pagar.
-            </p>
+        {/* FAQ Section */}
+        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Preguntas Frecuentes</h2>
+          
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <div key={index} className="border border-gray-200 rounded-lg">
+                <button
+                  onClick={() => toggleFaq(index)}
+                  className="w-full px-4 py-4 text-left flex justify-between items-center hover:bg-gray-50 transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {faq.question}
+                  </h3>
+                  <svg
+                    className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
+                      expandedFaq === index ? 'transform rotate-180' : ''
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                  expandedFaq === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                }`}>
+                  <div className="px-4 pb-4 border-t border-gray-100">
+                    <p className="text-gray-600 pt-3">
+                      {faq.answer}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
+        </div>
 
-          {/* FAQ 2 */}
-          <div className="border-b border-gray-200 pb-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              ¿Qué son las liquidaciones sugeridas?
-            </h3>
-            <p className="text-gray-600">
-              Las liquidaciones sugeridas te muestran la forma más eficiente de saldar las deudas del grupo. 
-              En lugar de que cada persona pague a todas las demás, el sistema calcula el mínimo número 
-              de transferencias necesarias para que todos queden a mano.
-            </p>
-          </div>
-
-          {/* FAQ 3 */}
-          <div className="border-b border-gray-200 pb-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              ¿Puedo agregar miembros después de crear un grupo?
-            </h3>
-            <p className="text-gray-600">
-              Actualmente, los miembros se agregan al momento de crear el grupo. La funcionalidad 
-              para agregar o quitar miembros después de la creación estará disponible en futuras actualizaciones.
-            </p>
-          </div>
-
-          {/* FAQ 4 */}
-          <div className="border-b border-gray-200 pb-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              ¿Los datos están seguros?
-            </h3>
-            <p className="text-gray-600">
-              Sí, todos los datos se almacenan de forma segura y solo son accesibles por ti y los 
-              miembros de tus grupos. Utilizamos medidas de seguridad estándar para proteger tu información.
-            </p>
-          </div>
-
-          {/* FAQ 5 */}
-          <div className="pb-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              ¿Puedo editar o eliminar gastos?
-            </h3>
-            <p className="text-gray-600">
-              Esta funcionalidad estará disponible próximamente. Por ahora, si necesitas hacer 
-              correcciones, puedes crear un nuevo gasto con el monto ajustado.
-            </p>
+        {/* Contact Support */}
+        <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
+          <h2 className="text-lg font-semibold text-blue-900 mb-2">¿Necesitas más ayuda?</h2>
+          <p className="text-blue-800 mb-4">
+            Si tienes alguna pregunta que no está en las FAQ o encuentras algún problema, 
+            no dudes en contactarnos.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+              Contactar Soporte
+            </button>
+            <button className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg transition-colors">
+              Reportar un Error
+            </button>
           </div>
         </div>
       </div>
-
-      {/* Contact Support */}
-      <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
-        <h2 className="text-lg font-semibold text-blue-900 mb-2">¿Necesitas más ayuda?</h2>
-        <p className="text-blue-800 mb-4">
-          Si tienes alguna pregunta que no está en las FAQ o encuentras algún problema, 
-          no dudes en contactarnos.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-            Contactar Soporte
-          </button>
-          <button className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg transition-colors">
-            Reportar un Error
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
