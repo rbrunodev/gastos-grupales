@@ -319,15 +319,56 @@ const AppContent = () => {
     );
   };
 
+  const renderProfileView = () => (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
+      <div className="bg-white rounded-lg shadow p-6">
+        <p className="text-gray-600">Configuración del perfil próximamente...</p>
+      </div>
+    </div>
+  );
+
+  const renderSettingsView = () => (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-gray-900">Configuración</h1>
+      <div className="bg-white rounded-lg shadow p-6">
+        <p className="text-gray-600">Configuración de la aplicación próximamente...</p>
+      </div>
+    </div>
+  );
+
+  const renderHelpView = () => (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-gray-900">Ayuda y Soporte</h1>
+      <div className="bg-white rounded-lg shadow p-6">
+        <p className="text-gray-600">Sección de ayuda próximamente...</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <NavBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
       <Sidebar
         isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
         onClose={() => setSidebarOpen(false)}
-        currentView={currentView}
-        onViewChange={setCurrentView}
+        currentScreen={currentView}
+        onNavigate={(screen) => {
+          if (screen === 'home') {
+            setCurrentView('groups');
+            setSelectedGroupId(null);
+          } else {
+            setCurrentView(screen);
+          }
+          setSidebarOpen(false);
+        }}
         onCreateGroup={handleCreateGroup}
+        onShowReminders={() => {
+          // Implementar lógica de recordatorios si es necesario
+          console.log('Mostrar recordatorios');
+          setSidebarOpen(false);
+        }}
         selectedGroupId={selectedGroupId}
         onViewGroup={handleViewGroup}
       />
@@ -336,6 +377,9 @@ const AppContent = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {currentView === 'groups' && renderGroupsList()}
           {currentView === 'groupDetail' && renderGroupDetail()}
+          {currentView === 'profile' && renderProfileView()}
+          {currentView === 'settings' && renderSettingsView()}
+          {currentView === 'help' && renderHelpView()}
         </div>
       </main>
 
