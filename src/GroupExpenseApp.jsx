@@ -206,6 +206,46 @@ const AppContent = () => {
           </button>
         </div>
 
+        {/* Balances - PRIMERO */}
+        {Object.keys(balances).length > 0 && (
+          <div className="bg-white rounded-lg shadow-lg border border-gray-100 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <DollarSign className="h-5 w-5 text-green-600 mr-2" />
+              Balances
+            </h2>
+            <div className="space-y-3">
+              {Object.entries(balances).map(([member, balance]) => (
+                <div key={member} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="font-medium text-gray-900">{member}</span>
+                  <span className={`font-bold text-lg ${balance > 0 ? 'text-green-600' : balance < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                    ${Math.abs(balance).toFixed(2)} {balance > 0 ? 'a favor' : balance < 0 ? 'debe' : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Settlements - SEGUNDO */}
+        {settlements.length > 0 && (
+          <div className="bg-white rounded-lg shadow-lg border border-gray-100 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <TrendingUp className="h-5 w-5 text-blue-600 mr-2" />
+              Liquidaciones Sugeridas
+            </h2>
+            <div className="space-y-3">
+              {settlements.map((settlement, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <span className="text-gray-900">
+                    <strong className="text-blue-800">{settlement.from}</strong> debe pagar a <strong className="text-blue-800">{settlement.to}</strong>
+                  </span>
+                  <span className="font-bold text-lg text-blue-600">${settlement.amount.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white p-4 rounded-lg shadow border border-gray-100">
@@ -281,40 +321,6 @@ const AppContent = () => {
             </div>
           )}
         </div>
-
-        {/* Balances */}
-        {Object.keys(balances).length > 0 && (
-          <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Balances</h2>
-            <div className="space-y-2">
-              {Object.entries(balances).map(([member, balance]) => (
-                <div key={member} className="flex justify-between items-center">
-                  <span className="font-medium text-gray-900">{member}</span>
-                  <span className={`font-semibold ${balance > 0 ? 'text-green-600' : balance < 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                    ${Math.abs(balance).toFixed(2)} {balance > 0 ? 'a favor' : balance < 0 ? 'debe' : ''}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Settlements */}
-        {settlements.length > 0 && (
-          <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Liquidaciones Sugeridas</h2>
-            <div className="space-y-2">
-              {settlements.map((settlement, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                  <span className="text-gray-900">
-                    <strong>{settlement.from}</strong> debe pagar a <strong>{settlement.to}</strong>
-                  </span>
-                  <span className="font-semibold text-blue-600">${settlement.amount.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     );
   };
