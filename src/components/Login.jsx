@@ -29,9 +29,12 @@ const Login = ({ onSwitchToRegister }) => {
     }
 
     const result = await login(formData.username, formData.password);
-    
+    console.log('Login result:', result); // Para debugging
+  
     if (!result.success) {
-      setError(result.error || 'Usuario o contraseña incorrectos');
+      const errorMsg = result.error || 'Usuario o contraseña incorrectos';
+      console.log('Setting error:', errorMsg); // Para debugging
+      setError(errorMsg);
     }
   };
 

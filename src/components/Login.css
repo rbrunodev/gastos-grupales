@@ -164,17 +164,15 @@
 
 /* MENSAJE DE ERROR - VERSIÓN UNIFICADA */
 .error-message {
-  background: #fef2f2;
-  color: #dc2626;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  background-color: #fee2e2;
   border: 1px solid #fecaca;
-  border-left: 4px solid #dc2626;
-  text-align: center;
-  font-weight: 500;
-  animation: shake 0.5s ease-in-out;
-  margin-bottom: 10px;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  display: block;
+  visibility: visible;
 }
 
 @keyframes shake {
