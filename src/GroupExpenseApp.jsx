@@ -16,7 +16,8 @@ const AppContent = () => {
     getGroupById, 
     calculateBalances, 
     calculateSettlements, 
-    isGroupBalanced 
+    isGroupBalanced,
+    addExpense
   } = useGroups();
   
   const [currentView, setCurrentView] = useState('groups');
@@ -62,6 +63,30 @@ const AppContent = () => {
 
   const handleAddExpense = () => {
     setShowAddExpenseModal(true);
+  };
+
+  const handleAddExpenseSuccess = async (expense) => {
+    try {
+      // Usar el contexto para agregar el gasto
+      const result = await addExpense(
+        selectedGroupId,
+        expense.description,
+        expense.amount,
+        expense.paidBy,
+        expense.splitWith
+      );
+      
+      if (result && result.success) {
+        setShowAddExpenseModal(false);
+        // Los datos se actualizarán automáticamente por el contexto
+      } else {
+        throw new Error(result?.message || 'Error al agregar el gasto');
+      }
+    } catch (error) {
+      console.error('Error adding expense:', error);
+      // El error se manejará en el modal
+      throw error;
+    }
   };
 
   const renderGroupsList = () => (
@@ -327,12 +352,10 @@ const AppContent = () => {
 
       {showAddExpenseModal && selectedGroup && (
         <AddExpenseModal
+          open={showAddExpenseModal}
           group={selectedGroup}
           onClose={() => setShowAddExpenseModal(false)}
-          onExpenseAdded={() => {
-            setShowAddExpenseModal(false);
-            // Los gastos se recargan automáticamente por el contexto
-          }}
+          onAdd={handleAddExpenseSuccess}
         />
       )}
     </div>
