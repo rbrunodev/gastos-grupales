@@ -25,7 +25,7 @@ const AppContent = () => {
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [expandedFaq, setExpandedFaq] = useState(null); // Mover el estado aquí
+  const [expandedFaq, setExpandedFaq] = useState(null);
 
   // Si está cargando la autenticación, mostrar loading
   if (authLoading) {
@@ -88,6 +88,247 @@ const AppContent = () => {
       // El error se manejará en el modal
       throw error;
     }
+  };
+
+  const handleShowReminders = () => {
+    setCurrentView('reminders');
+    setSidebarOpen(false);
+  };
+
+  // Función para calcular recordatorios de deudas
+  const calculateReminders = () => {
+    const reminders = {
+      owedToMe: [], // Quienes me deben
+      iOwe: []      // A quienes les debo
+    };
+
+    groups.forEach(group => {
+      const balances = calculateBalances(group);
+      const settlements = calculateSettlements(balances);
+      
+      settlements.forEach(settlement => {
+        if (settlement.to === user.username) {
+          // Alguien me debe dinero
+          reminders.owedToMe.push({
+            groupName: group.name,
+            groupId: group.id,
+            person: settlement.from,
+            amount: settlement.amount
+          });
+        } else if (settlement.from === user.username) {
+          // Yo le debo dinero a alguien
+          reminders.iOwe.push({
+            groupName: group.name,
+            groupId: group.id,
+            person: settlement.to,
+            amount: settlement.amount
+          });
+        }
+      });
+    });
+
+    return reminders;
+  };
+
+  const renderRemindersView = () => {
+    const reminders = calculateReminders();
+    const totalOwedToMe = reminders.owedToMe.reduce((sum, debt) => sum + debt.amount, 0);
+    const totalIOwe = reminders.iOwe.reduce((sum, debt) => sum + debt.amount, 0);
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-gray-900">Recordatorios de Deudas</h2>
+          <button
+            onClick={() => setCurrentView('groups')}
+            className="text-blue-600 hover:text-blue-700 text-sm"
+          >
+            ← Volver a grupos
+          </button>
+        </div>
+
+        {/* Resumen */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-green-700">Te deben en total</span>
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            </div>
+            <div className="text-2xl font-bold text-green-600">
+              ${totalOwedToMe.toFixed(2)}
+            </div>
+            <p className="text-xs text-green-600 mt-1">{reminders.owedToMe.length} deudas pendientes</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-lg p-4 border border-red-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-red-700">Debes en total</span>
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+            </div>
+            <div className="text-2xl font-bold text-red-600">
+              ${totalIOwe.toFixed(2)}
+            </div>
+            <p className="text-xs text-red-600 mt-1">{reminders.iOwe.length} pagos pendientes</p>
+          </div>
+
+          <div className={`bg-gradient-to-br rounded-lg p-4 border ${
+            totalOwedToMe - totalIOwe > 0 
+              ? 'from-blue-50 to-indigo-50 border-blue-200' 
+              : totalOwedToMe - totalIOwe < 0 
+                ? 'from-orange-50 to-amber-50 border-orange-200'
+                : 'from-gray-50 to-slate-50 border-gray-200'
+          }`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-sm font-medium ${
+                totalOwedToMe - totalIOwe > 0 
+                  ? 'text-blue-700' 
+                  : totalOwedToMe - totalIOwe < 0 
+                    ? 'text-orange-700'
+                    : 'text-gray-700'
+              }`}>
+                Balance Neto
+              </span>
+              <div className={`w-2 h-2 rounded-full ${
+                totalOwedToMe - totalIOwe > 0 
+                  ? 'bg-blue-500' 
+                  : totalOwedToMe - totalIOwe < 0 
+                    ? 'bg-orange-500'
+                    : 'bg-gray-500'
+              }`}></div>
+            </div>
+            <div className={`text-2xl font-bold ${
+              totalOwedToMe - totalIOwe > 0 
+                ? 'text-blue-600' 
+                : totalOwedToMe - totalIOwe < 0 
+                  ? 'text-orange-600'
+                  : 'text-gray-600'
+            }`}>
+              {totalOwedToMe - totalIOwe >= 0 ? '+' : ''}${(totalOwedToMe - totalIOwe).toFixed(2)}
+            </div>
+          </div>
+        </div>
+
+        {/* Dinero que te deben */}
+        {reminders.owedToMe.length > 0 && (
+          <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+              Te deben dinero ({reminders.owedToMe.length})
+            </h2>
+            <div className="space-y-3">
+              {reminders.owedToMe.map((debt, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-green-900">
+                          <strong>{debt.person}</strong> te debe
+                        </p>
+                        <p className="text-sm text-green-700">
+                          En el grupo: {debt.groupName}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-green-600">
+                          ${debt.amount.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => handleViewGroup(debt.groupId)}
+                        className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full transition-colors"
+                      >
+                        Ver Grupo
+                      </button>
+                      <button className="text-xs border border-green-600 text-green-600 hover:bg-green-50 px-3 py-1 rounded-full transition-colors">
+                        Enviar Recordatorio
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Dinero que debes */}
+        {reminders.iOwe.length > 0 && (
+          <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+              Debes dinero ({reminders.iOwe.length})
+            </h2>
+            <div className="space-y-3">
+              {reminders.iOwe.map((debt, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-red-900">
+                          Le debes a <strong>{debt.person}</strong>
+                        </p>
+                        <p className="text-sm text-red-700">
+                          En el grupo: {debt.groupName}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-red-600">
+                          ${debt.amount.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => handleViewGroup(debt.groupId)}
+                        className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-full transition-colors"
+                      >
+                        Ver Grupo
+                      </button>
+                      <button className="text-xs border border-red-600 text-red-600 hover:bg-red-50 px-3 py-1 rounded-full transition-colors">
+                        Marcar como Pagado
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Estado sin deudas */}
+        {reminders.owedToMe.length === 0 && reminders.iOwe.length === 0 && (
+          <div className="bg-white rounded-lg shadow border border-gray-100 p-12">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-medium text-gray-900 mb-2">
+                ¡Todo al día! 🎉
+              </h3>
+              <p className="text-gray-600">
+                No tienes deudas pendientes en ninguno de tus grupos.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Consejos */}
+        <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
+          <h3 className="text-lg font-medium text-blue-900 mb-2">
+            💡 Consejos para mantener las cuentas al día
+          </h3>
+          <ul className="text-blue-800 space-y-1 text-sm list-disc list-inside">
+            <li>Revisa regularmente tus recordatorios para evitar que se acumulen las deudas</li>
+            <li>Comunícate con los miembros del grupo sobre los pagos pendientes</li>
+            <li>Utiliza las liquidaciones sugeridas para minimizar las transferencias</li>
+            <li>Registra los pagos tan pronto como se realicen</li>
+          </ul>
+        </div>
+      </div>
+    );
   };
 
   const renderGroupsList = () => (
@@ -393,12 +634,6 @@ const AppContent = () => {
               <h3 className="text-lg font-medium text-gray-900">Información Básica</h3>
               
               <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm font-medium text-gray-600">Nombre completo:</span>
-                  <span className="text-sm text-gray-900">
-                    {user.full_name || 'No especificado'}
-                  </span>
-                </div>
                 
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <span className="text-sm font-medium text-gray-600">Nombre de usuario:</span>
@@ -643,7 +878,7 @@ const AppContent = () => {
 
   const renderSettingsView = () => (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Configuración</h1>
+      <h2 className="text-3xl font-bold text-gray-900">Configuración</h2>
       <div className="bg-white rounded-lg shadow p-6">
         <p className="text-gray-600">Configuración de la aplicación próximamente...</p>
       </div>
@@ -760,11 +995,7 @@ const AppContent = () => {
           setSidebarOpen(false);
         }}
         onCreateGroup={handleCreateGroup}
-        onShowReminders={() => {
-          // Implementar lógica de recordatorios si es necesario
-          console.log('Mostrar recordatorios');
-          setSidebarOpen(false);
-        }}
+        onShowReminders={handleShowReminders}
         selectedGroupId={selectedGroupId}
         onViewGroup={handleViewGroup}
       />
@@ -776,6 +1007,7 @@ const AppContent = () => {
           {currentView === 'profile' && renderProfileView()}
           {currentView === 'settings' && renderSettingsView()}
           {currentView === 'help' && renderHelpView()}
+          {currentView === 'reminders' && renderRemindersView()}
         </div>
       </main>
 
@@ -785,7 +1017,6 @@ const AppContent = () => {
           onClose={() => setShowCreateGroupModal(false)}
           onGroupCreated={() => {
             setShowCreateGroupModal(false);
-            // Los grupos se recargan automáticamente por el contexto
           }}
         />
       )}
