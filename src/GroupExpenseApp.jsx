@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GroupsProvider, useGroups } from './context/GroupsContext';
 import Auth from './components/Auth';
@@ -26,6 +26,16 @@ const AppContent = () => {
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState(null);
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light'); // Mover aquí
+
+  // Aplicar tema al cargar
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   // Si está cargando la autenticación, mostrar loading
   if (authLoading) {
@@ -876,14 +886,181 @@ const AppContent = () => {
     );
   };
 
-  const renderSettingsView = () => (
-    <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-gray-900">Configuración</h2>
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-600">Configuración de la aplicación próximamente...</p>
+  const renderSettingsView = () => {
+    const handleThemeChange = (newTheme) => {
+      setTheme(newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      // Aplicar el tema al documento
+      if (newTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-gray-900">Configuración</h1>
+        
+        {/* Configuración de Tema */}
+        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Personalización</h2>
+          
+          <div className="space-y-6">
+            {/* Selector de Tema */}
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Tema de la aplicación</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Tema Claro */}
+                <div 
+                  className={`relative rounded-lg border-2 cursor-pointer transition-all p-4 ${
+                    theme === 'light' 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => handleThemeChange('light')}
+                >
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-white rounded-lg border border-gray-300 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <h4 className="text-sm font-medium text-gray-900">Tema Claro</h4>
+                      <p className="text-sm text-gray-500">Interfaz brillante y clara</p>
+                    </div>
+                    {theme === 'light' && (
+                      <div className="flex-shrink-0">
+                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tema Oscuro */}
+                <div 
+                  className={`relative rounded-lg border-2 cursor-pointer transition-all p-4 ${
+                    theme === 'dark' 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => handleThemeChange('dark')}
+                >
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-gray-800 rounded-lg border border-gray-700 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <h4 className="text-sm font-medium text-gray-900">Tema Oscuro</h4>
+                      <p className="text-sm text-gray-500">Interfaz oscura para reducir fatiga visual</p>
+                    </div>
+                    {theme === 'dark' && (
+                      <div className="flex-shrink-0">
+                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-sm text-gray-600 mt-3">
+                {theme === 'light' 
+                  ? 'Actualmente usando el tema claro. La interfaz se muestra con colores brillantes y fondos claros.' 
+                  : 'Actualmente usando el tema oscuro. La interfaz se muestra con colores oscuros para reducir la fatiga visual.'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Otras Configuraciones */}
+        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Notificaciones</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-900">Recordatorios de pago</span>
+              <button 
+                className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs cursor-not-allowed"
+                disabled
+              >
+                Próximamente
+              </button>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-900">Nuevos gastos en grupos</span>
+              <button 
+                className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs cursor-not-allowed"
+                disabled
+              >
+                Próximamente
+              </button>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-900">Resumen semanal</span>
+              <button 
+                className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs cursor-not-allowed"
+                disabled
+              >
+                Próximamente
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Configuración de Privacidad */}
+        <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Privacidad</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-900">Visibilidad del perfil</span>
+              <button 
+                className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs cursor-not-allowed"
+                disabled
+              >
+                Próximamente
+              </button>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-900">Compartir estadísticas</span>
+              <button 
+                className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs cursor-not-allowed"
+                disabled
+              >
+                Próximamente
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Información de la Aplicación */}
+        <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Información</h2>
+          <div className="space-y-2 text-sm text-gray-600">
+            <div className="flex justify-between">
+              <span>Versión de la aplicación:</span>
+              <span className="font-mono">1.0.0</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Última actualización:</span>
+              <span>{new Date().toLocaleDateString()}</span>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderHelpView = () => {
     const toggleFaq = (index) => {
