@@ -346,8 +346,86 @@ const AppContent = () => {
   const renderHelpView = () => (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">Ayuda y Soporte</h1>
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-600">Sección de ayuda próximamente...</p>
+      
+      {/* FAQ Section */}
+      <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">Preguntas Frecuentes</h2>
+        
+        <div className="space-y-6">
+          {/* FAQ 1 */}
+          <div className="border-b border-gray-200 pb-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              ¿Cómo funciona el cálculo de balances?
+            </h3>
+            <p className="text-gray-600">
+              El sistema calcula automáticamente cuánto debe o le deben a cada miembro del grupo. 
+              Cuando agregas un gasto, se divide equitativamente entre los miembros seleccionados, 
+              y el balance muestra la diferencia entre lo que cada persona pagó y lo que debería pagar.
+            </p>
+          </div>
+
+          {/* FAQ 2 */}
+          <div className="border-b border-gray-200 pb-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              ¿Qué son las liquidaciones sugeridas?
+            </h3>
+            <p className="text-gray-600">
+              Las liquidaciones sugeridas te muestran la forma más eficiente de saldar las deudas del grupo. 
+              En lugar de que cada persona pague a todas las demás, el sistema calcula el mínimo número 
+              de transferencias necesarias para que todos queden a mano.
+            </p>
+          </div>
+
+          {/* FAQ 3 */}
+          <div className="border-b border-gray-200 pb-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              ¿Puedo agregar miembros después de crear un grupo?
+            </h3>
+            <p className="text-gray-600">
+              Actualmente, los miembros se agregan al momento de crear el grupo. La funcionalidad 
+              para agregar o quitar miembros después de la creación estará disponible en futuras actualizaciones.
+            </p>
+          </div>
+
+          {/* FAQ 4 */}
+          <div className="border-b border-gray-200 pb-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              ¿Los datos están seguros?
+            </h3>
+            <p className="text-gray-600">
+              Sí, todos los datos se almacenan de forma segura y solo son accesibles por ti y los 
+              miembros de tus grupos. Utilizamos medidas de seguridad estándar para proteger tu información.
+            </p>
+          </div>
+
+          {/* FAQ 5 */}
+          <div className="pb-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              ¿Puedo editar o eliminar gastos?
+            </h3>
+            <p className="text-gray-600">
+              Esta funcionalidad estará disponible próximamente. Por ahora, si necesitas hacer 
+              correcciones, puedes crear un nuevo gasto con el monto ajustado.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Support */}
+      <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
+        <h2 className="text-lg font-semibold text-blue-900 mb-2">¿Necesitas más ayuda?</h2>
+        <p className="text-blue-800 mb-4">
+          Si tienes alguna pregunta que no está en las FAQ o encuentras algún problema, 
+          no dudes en contactarnos.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+            Contactar Soporte
+          </button>
+          <button className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg transition-colors">
+            Reportar un Error
+          </button>
+        </div>
       </div>
     </div>
   );
