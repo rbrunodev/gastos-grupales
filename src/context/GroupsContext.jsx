@@ -207,46 +207,44 @@ const removePayment = async (groupId, paymentId) => {
     }
   };
 
-  const calculateBalances = (group) => {
-    if (!group?.expenses || !Array.isArray(group.expenses)) return {};
+const toCents = v => Math.round(Number(v || 0) * 100);
 
-    const balances = {};
-    
-    if (group.members && Array.isArray(group.members)) {
-      group.members.forEach(member => {
-        balances[member] = 0;
-      });
-    }
+const calculateBalances = (group) => {
+  if (!group?.expenses || !Array.isArray(group.expenses)) return {};
 
-    group.expenses.forEach(expense => {
-      if (expense.amount && expense.paid_by_username && expense.splitBetween) {
-        const { amount, paid_by_username, splitBetween } = expense;
-        const sharePerPerson = amount / splitBetween.length;
+  const cents = {};
+  (group.members || []).forEach(m => { cents[m] = 0; });
 
-        if (balances.hasOwnProperty(paid_by_username)) {
-          balances[paid_by_username] += amount;
-        }
+  group.expenses.forEach(exp => {
+    const { amount, paid_by_username, splitBetween } = exp || {};
+    if (!amount || !paid_by_username || !Array.isArray(splitBetween) || !splitBetween.length) return;
 
-        splitBetween.forEach(member => {
-          if (balances.hasOwnProperty(member)) {
-            balances[member] -= sharePerPerson;
-          }
-        });
-      }
+    const total = toCents(amount);
+    cents[paid_by_username] = (cents[paid_by_username] ?? 0) + total;
+
+    const n = splitBetween.length;
+    const base = Math.floor(total / n);
+    let rem = total - base * n;
+
+    splitBetween.forEach((member, idx) => {
+      const share = base + (rem > 0 ? 1 : 0);
+      rem = Math.max(0, rem - 1);
+      cents[member] = (cents[member] ?? 0) - share;
     });
+  });
 
-  const payments = group.payments || [];
-  for (const p of payments) {
-    if (balances.hasOwnProperty(p.from)) {
-      balances[p.from] = (balances[p.from] ?? 0) + Number(p.amount || 0);
-    }
-    if (balances.hasOwnProperty(p.to)) {
-      balances[p.to] = (balances[p.to] ?? 0) - Number(p.amount || 0);
-    }
-  }
+  (group.payments || []).forEach(p => {
+    const amt = toCents(p.amount);
+    if (p.from) cents[p.from] = (cents[p.from] ?? 0) + amt;
+    if (p.to)   cents[p.to]   = (cents[p.to]   ?? 0) - amt;
+  });
 
-    return balances;
-  };
+  const balances = {};
+  Object.entries(cents).forEach(([k, v]) => {
+    balances[k] = (v / 100); 
+  });
+  return balances;
+};
 
   const calculateSettlements = (balances) => {
     const settlements = [];
