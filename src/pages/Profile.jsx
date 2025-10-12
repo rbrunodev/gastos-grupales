@@ -1,7 +1,7 @@
 import React from "react";
 import { useAuth } from "../context/AuthContext";
 import { useGroups } from "../context/GroupsContext";
-import { Users, DollarSign, TrendingUp, AlertCircle } from "lucide-react";
+import { Users, DollarSign, TrendingUp, AlertCircle, LucideHeading3 } from "lucide-react";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -42,7 +42,7 @@ export default function Profile() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
+      <h3 className="text-3xl font-bold text-gray-900">Mi Perfil</h3>
 
       {/* Información del Usuario */}
       <div className="bg-white rounded-lg shadow border border-gray-100 p-6">

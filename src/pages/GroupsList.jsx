@@ -11,7 +11,7 @@ export default function GroupsList({ onCreateGroup, onViewGroup }) {
   } = useGroups();
 
   return (
-    <div className="space-y-6 mt-6 md:mt-10">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Mis Grupos</h1>
         <button

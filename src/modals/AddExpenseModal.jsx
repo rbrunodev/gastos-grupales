@@ -146,7 +146,7 @@ export default function AddExpenseModal({ open, onClose, group, onAdd }) {
     : "0";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/30 dark:bg-slate-900/40 backdrop-blur-sm">
       <div className="relative w-full max-w-lg mx-4">
         <div className="bg-white rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
           {/* header */}

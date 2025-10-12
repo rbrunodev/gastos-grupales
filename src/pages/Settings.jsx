@@ -10,7 +10,7 @@ export default function Settings({ theme, setTheme, onBack }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Configuración</h1>
+        <h3 className="text-3xl font-bold text-gray-900">Configuración</h3>
         {onBack && (
           <button onClick={onBack} className="text-blue-600 hover:text-blue-700 text-sm">
             ← Volver

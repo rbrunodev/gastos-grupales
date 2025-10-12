@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Home, UserPlus, Bell, Settings, HelpCircle, User, X, LogOut } from "lucide-react";
+import { Home, UserPlus, Bell, Settings, HelpCircle, User, X, LogOut,Wallet,UserCircle2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export default function Sidebar({
@@ -79,6 +79,20 @@ export default function Sidebar({
           </div>
 
           {/* Items */}
+                   {/* User info and logout */}
+            <div className="px-2 py-2 rounded-2xl bg-gray-50">
+              <div className="flex items-center gap-3 px-2 py-2 mb-2">
+                <div className="w-10 h-10 rounded-full bg-blue-100 grid place-items-center">
+                  <UserCircle2 className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="text-left flex-1">
+                  <p className="font-medium text-gray-800 text-sm">{user?.username}</p>
+                  <p className="text-xs text-gray-500">@{user?.username}</p>
+                </div>
+              </div>
+              
+            </div>
+
           <nav className="flex-1 p-3 space-y-3 overflow-y-auto">
             <button
               onClick={() => {
@@ -122,11 +136,11 @@ export default function Sidebar({
               className={`${itemBase} ${idle}`}
             >
               <div className="w-10 h-10 rounded-full bg-orange-100 grid place-items-center">
-                <Bell className="w-5 h-5 text-orange-600" />
+                <Wallet className="w-5 h-5 text-orange-600" />
               </div>
               <div className="text-left">
                 <p className="font-medium text-gray-800">Balance Personal</p>
-                <p className="text-xs text-gray-500">Deudas pendientes</p>
+                <p className="text-xs text-gray-500">Resumen financiero</p>
               </div>
             </button>
 
@@ -185,22 +199,7 @@ export default function Sidebar({
                 </p>
               </div>
             </button>
-
-            <div className="border-t border-gray-100 my-2 mx-2" />
-
-            {/* User info and logout */}
-            <div className="px-2 py-2 rounded-2xl bg-gray-50">
-              <div className="flex items-center gap-3 px-2 py-2 mb-2">
-                <div className="w-10 h-10 rounded-full bg-blue-100 grid place-items-center">
-                  <User className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="text-left flex-1">
-                  <p className="font-medium text-gray-800 text-sm">{user?.username}</p>
-                  <p className="text-xs text-gray-500">@{user?.username}</p>
-                </div>
-              </div>
-              
-              <button
+            <button
                 onClick={() => {
                   logout();
                   handleClose();
@@ -210,7 +209,8 @@ export default function Sidebar({
                 <LogOut className="w-4 h-4" />
                 <span className="font-medium text-sm">Cerrar Sesión</span>
               </button>
-            </div>
+          
+          <div className="border-t border-gray-100 my-2 mx-2" />
           </nav>
 
           {/* Footer */}

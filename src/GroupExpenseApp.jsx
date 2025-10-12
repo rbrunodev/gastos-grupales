@@ -135,7 +135,7 @@ const AppContent = () => {
         onViewGroup={handleViewGroup}
       />
 
-      <main className="flex-1 pt-16 pb-8">
+      <main className="flex-1 pt-20 md:pt-24 pb-8">
         <div className="px-4 sm:px-6 lg:px-8">
           {currentView === 'createGroup' && (
             <CreateGroup
