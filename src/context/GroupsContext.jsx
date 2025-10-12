@@ -1,6 +1,25 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 
+// Pagos
+const PAYMENTS_KEY = 'gg_payments_v1'; 
+function loadPaymentsMap() {
+  try { return JSON.parse(localStorage.getItem(PAYMENTS_KEY) || '{}'); }
+  catch { return {}; }
+}
+function savePaymentsMap(map) {
+  localStorage.setItem(PAYMENTS_KEY, JSON.stringify(map));
+}
+function getPaymentsForGroup(groupId) {
+  const map = loadPaymentsMap();
+  return map[groupId] || [];
+}
+function setPaymentsForGroup(groupId, payments) {
+  const map = loadPaymentsMap();
+  map[groupId] = payments;
+  savePaymentsMap(map);
+}
+
 const GroupsContext = createContext();
 
 const API_URL = 'http://localhost:3001/api';
@@ -11,7 +30,6 @@ export const GroupsProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const { user } = useAuth();
 
-  // Cargar grupos cuando el usuario cambie
   useEffect(() => {
     if (user?.id) {
       loadUserGroups();
@@ -34,7 +52,11 @@ export const GroupsProvider = ({ children }) => {
       }
       
       const userGroups = await response.json();
-      setGroups(Array.isArray(userGroups) ? userGroups : []);
+      const withPayments = (Array.isArray(userGroups) ? userGroups : []).map(g => ({
+        ...g,
+      payments: getPaymentsForGroup(g.id), 
+      }));
+      setGroups(withPayments);
     } catch (error) {
       console.error('Error cargando grupos:', error);
       setError('Error cargando grupos');
@@ -44,42 +66,48 @@ export const GroupsProvider = ({ children }) => {
     }
   };
 
-  const createGroup = async (groupName, description, memberUsernames) => {
-    if (!user?.id) {
-      return { success: false, message: 'Usuario no autenticado' };
+const createGroup = async (groupName, description, memberUsernames) => {
+  if (!user?.id) {
+    return { success: false, message: 'Usuario no autenticado' };
+  }
+
+  const cleaned = (memberUsernames || [])
+    .map(m => (m || '').trim())
+    .filter(Boolean);
+  const allMembers = [...new Set([user.username, ...cleaned])];
+
+
+  try {
+    const response = await fetch(`${API_URL}/groups`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: groupName,
+        description: description || '',
+        created_by: user.id,       
+        members: allMembers,       
+      }),
+    });
+
+    const text = await response.text(); 
+    console.log('[createGroup] raw response:', response.status, text);
+
+    if (!response.ok) {
+      let data;
+      try { data = JSON.parse(text); } catch { data = null; }
+      return { success: false, message: (data?.error || text || `HTTP ${response.status}`) };
     }
 
-    try {
-      // Asegurar que el creador esté en la lista de miembros
-      const allMembers = [...new Set([user.username, ...memberUsernames])];
-      
-      const response = await fetch(`${API_URL}/groups`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: groupName,
-          description: description || '',
-          created_by: user.id,
-          members: allMembers
-        }),
-      });
+    const data = JSON.parse(text || '{}');
 
-      const data = await response.json();
+    await loadUserGroups();
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error creando grupo:', error);
+    return { success: false, message: error.message || 'Error de conexión' };
+  }
+};
 
-      if (data.success) {
-        // Recargar grupos
-        await loadUserGroups();
-        return { success: true };
-      } else {
-        return { success: false, message: data.error || 'Error creando el grupo' };
-      }
-    } catch (error) {
-      console.error('Error creando grupo:', error);
-      return { success: false, message: 'Error de conexión' };
-    }
-  };
 
   const addExpense = async (groupId, description, amount, paidBy, splitWith) => {
     try {
@@ -91,7 +119,7 @@ export const GroupsProvider = ({ children }) => {
         splitWith
       });
 
-      const response = await fetch(`${API_URL}/expenses`, {  // ← Quitar el /api/ duplicado
+      const response = await fetch(`${API_URL}/expenses`, {  
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -109,14 +137,12 @@ export const GroupsProvider = ({ children }) => {
       
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Server error response:', errorData);
+        console.error('Server error response:', errorData);
         throw new Error(`Server error: ${response.status} - ${errorData}`);
       }
 
       const result = await response.json();
-      console.log('✅ Expense added:', result);
       
-      // Recargar grupos después de agregar el gasto
       await loadUserGroups();
       
       return { success: true, data: result };
@@ -125,6 +151,44 @@ export const GroupsProvider = ({ children }) => {
       return { success: false, message: error.message };
     }
   };
+
+  const addPayment = async (groupId, fromUsername, toUsername, amount) => {
+  try {
+    setGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      const newPayment = {
+        id: (crypto?.randomUUID?.() || String(Date.now())),
+        from: fromUsername,
+        to: toUsername,
+        amount: Number(amount),
+        createdAt: new Date().toISOString(),
+      };
+      const nextPayments = [...(g.payments || []), newPayment];
+      setPaymentsForGroup(groupId, nextPayments);   // persistir local
+      return { ...g, payments: nextPayments };
+    }));
+    return { success: true };
+  } catch (e) {
+    console.error('Error addPayment:', e);
+    return { success: false, message: 'No se pudo registrar el pago' };
+  }
+};
+
+const removePayment = async (groupId, paymentId) => {
+  try {
+    setGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      const nextPayments = (g.payments || []).filter(p => p.id !== paymentId);
+      setPaymentsForGroup(groupId, nextPayments);   // persistir local
+      return { ...g, payments: nextPayments };
+    }));
+    return { success: true };
+  } catch (e) {
+    console.error('Error removePayment:', e);
+    return { success: false, message: 'No se pudo deshacer el pago' };
+  }
+};
+
 
   const getGroupById = (groupId) => {
     return groups.find(group => group.id === parseInt(groupId));
@@ -143,31 +207,26 @@ export const GroupsProvider = ({ children }) => {
     }
   };
 
-  // Funciones de cálculo
   const calculateBalances = (group) => {
     if (!group?.expenses || !Array.isArray(group.expenses)) return {};
 
     const balances = {};
     
-    // Inicializar balances para todos los miembros
     if (group.members && Array.isArray(group.members)) {
       group.members.forEach(member => {
         balances[member] = 0;
       });
     }
 
-    // Calcular balances basado en gastos
     group.expenses.forEach(expense => {
       if (expense.amount && expense.paid_by_username && expense.splitBetween) {
         const { amount, paid_by_username, splitBetween } = expense;
         const sharePerPerson = amount / splitBetween.length;
 
-        // El que pagó tiene crédito por el monto total
         if (balances.hasOwnProperty(paid_by_username)) {
           balances[paid_by_username] += amount;
         }
 
-        // Cada participante debe su parte
         splitBetween.forEach(member => {
           if (balances.hasOwnProperty(member)) {
             balances[member] -= sharePerPerson;
@@ -175,6 +234,16 @@ export const GroupsProvider = ({ children }) => {
         });
       }
     });
+
+  const payments = group.payments || [];
+  for (const p of payments) {
+    if (balances.hasOwnProperty(p.from)) {
+      balances[p.from] = (balances[p.from] ?? 0) + Number(p.amount || 0);
+    }
+    if (balances.hasOwnProperty(p.to)) {
+      balances[p.to] = (balances[p.to] ?? 0) - Number(p.amount || 0);
+    }
+  }
 
     return balances;
   };
@@ -184,7 +253,6 @@ export const GroupsProvider = ({ children }) => {
     const creditors = [];
     const debtors = [];
 
-    // Separar acreedores y deudores
     Object.entries(balances).forEach(([person, balance]) => {
       if (balance > 0.01) {
         creditors.push({ person, amount: balance });
@@ -193,11 +261,9 @@ export const GroupsProvider = ({ children }) => {
       }
     });
 
-    // Ordenar por monto (mayor primero)
     creditors.sort((a, b) => b.amount - a.amount);
     debtors.sort((a, b) => b.amount - a.amount);
 
-    // Calcular liquidaciones
     let i = 0, j = 0;
     while (i < creditors.length && j < debtors.length) {
       const creditor = creditors[i];
@@ -238,6 +304,8 @@ export const GroupsProvider = ({ children }) => {
     calculateBalances,
     calculateSettlements,
     isGroupBalanced,
+    addPayment,
+    removePayment,
     refreshGroups: loadUserGroups
   };
 

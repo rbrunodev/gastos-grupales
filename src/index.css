@@ -20,13 +20,16 @@
     height: 100%;
   }
 
-  body {
-    margin: 0;
-    display: block;     /* <-- en lugar de flex/place-items:center */
-    min-height: 100dvh; /* mejor para mobile que 100vh */
-    background: #fff;   /* el fondo/gradiente lo maneja tu app, no el body */
-    color: #111;        /* color por defecto claro */
-  }
+body {
+  margin: 0;
+  display: block;
+  min-height: 100dvh;
+  background: #fff;
+  color: #111;
+  overflow-x: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
 
   html, body, #root { height: 100%; }
   /* bloquea scroll horizontal en toda la app */
@@ -47,13 +50,6 @@ a:hover {
   color: #535bf2;
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
 
 h1 {
   font-size: 3.2em;

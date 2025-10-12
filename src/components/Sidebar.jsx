@@ -9,7 +9,7 @@ export default function Sidebar({
   currentScreen,
   onNavigate,
   onCreateGroup,
-  onShowReminders,
+  onShowPersonalBalance,
   selectedGroupId,
   onViewGroup,
   className = "",
@@ -116,7 +116,7 @@ export default function Sidebar({
 
             <button
               onClick={() => {
-                onShowReminders?.();
+                onShowPersonalBalance?.();
                 handleClose();
               }}
               className={`${itemBase} ${idle}`}
@@ -125,7 +125,7 @@ export default function Sidebar({
                 <Bell className="w-5 h-5 text-orange-600" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-gray-800">Recordatorios</p>
+                <p className="font-medium text-gray-800">Balance Personal</p>
                 <p className="text-xs text-gray-500">Deudas pendientes</p>
               </div>
             </button>
