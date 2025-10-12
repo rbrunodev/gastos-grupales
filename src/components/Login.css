@@ -80,12 +80,25 @@
   margin-bottom: 24px;
 }
 
+.login-icon {
+  background: linear-gradient(135deg, var(--violet-1) 0%, var(--violet-3) 100%);
+  width: 80px;              /* podés subir/bajar el tamaño */
+  height: 80px;
+  border-radius: 50%;       /* hace el círculo */
+  display: grid;
+  place-items: center;      /* centra el contenido */
+  margin: 0 auto 14px;      /* centrado horizontal y separación inferior */
+  color: #fff;
+}
+
 .login-icon{
-  margin: 0 auto 14px;     
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
-  overflow: hidden;              
+  overflow: hidden;              /* recorta todo a círculo */
   display: grid;
   place-items: center;
+  /* opcional: fondo por si la imagen tiene transparencias */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   box-shadow:
     0 12px 24px rgba(102,126,234,0.28),
@@ -93,9 +106,11 @@
 }
 
 .login-logo{
-  width: 72px;
-  height: 72px;
-  object-fit: contain;       
+  width: 100%;
+  height: 100%;
+  object-fit: cover;             /* llena el círculo sin deformarse */
+  object-position: center;
+  display: block;                /* elimina espacios “inline” */
 }
 
 .login-header h1 {
