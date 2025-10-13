@@ -1,9 +1,11 @@
+
+
 .register-container {
   min-height: 100vh;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
 }
 
 .register-background {
@@ -14,7 +16,11 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  box-sizing: border-box;
+  padding: var(--reg-gap);       /* marco respirable, no genera scroll */
+
 }
+
 
 .register-background::before {
   content: '';
@@ -30,16 +36,38 @@
 .register-card {
   background: white;
   border-radius: 20px;
-  padding: 40px;
+  padding: 32px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 500px;
+  width: min(420px, 100%);
+  max-width: 700;              /* mismo ancho que el login */
   position: relative;
   z-index: 2;
   animation: slideUp 0.6s ease-out;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: calc(100svh - 2 * var(--reg-gap));
+  overflow: auto;
+  scrollbar-gutter: stable;
 }
+
+/* Más ancho por defecto, manteniendo márgenes laterales seguros */
+.register-card{
+  /* antes: max-width: 420px; width: min(420px, 100%); */
+  max-width: 560px;
+  width: min(560px, 100% - 2 * var(--reg-gap));
+}
+
+/* En pantallas grandes podés permitir un poco más si lo querés */
+@media (min-width: 1024px){
+  .register-card{
+    max-width: 600px;
+    width: min(600px, 100% - 2 * var(--reg-gap));
+  }
+}
+
+/* Asegurá el layout de 2 columnas antes para aprovechar el ancho extra */
+@media (min-width: 640px){
+  .form-row{ grid-template-columns: 1fr 1fr; gap: 14px; }
+}
+
 
 @keyframes slideUp {
   from {
@@ -270,6 +298,19 @@
   cursor: not-allowed;
 }
 
+.success-message {
+  background: #f0f9ff;
+  color: #166534;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #16a34a;
+  text-align: center;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
 /* Responsive */
 @media (max-width: 540px) {
   .register-card {
@@ -285,4 +326,60 @@
   .input-container input {
     padding: 12px 45px 12px 45px;
   }
+}
+
+/* —— Layout igual al login: centrado, sin scroll de página —— */
+:root { --reg-gap: clamp(16px, 4vh, 32px); }
+
+
+
+/* Espaciados y tipografía más compactos (como el login) */
+.register-header{ margin-bottom: 20px; }
+.register-header h1{ font-size: 1.9rem; }
+.register-header p{ font-size: .95rem; }
+
+/* Form en 1 columna por defecto; 2 columnas desde tablet */
+.register-form{ gap: 16px; }
+.form-row{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 700px){
+  .form-row{ grid-template-columns: 1fr 1fr; gap: 14px; }
+}
+
+/* Inputs y mensajes, tamaño “login” */
+.input-container input{ padding: 13px 48px; }
+.error-message, .success-message{ padding: 10px 12px; font-size: .9rem; }
+
+/* Footer alineado y más corto */
+.register-footer{ margin-top: 18px; }
+.register-footer p{ font-size: .9rem; }
+
+/* Ajustes extra para pantallas muy chicas */
+@media (max-width: 380px){
+  .register-card{ padding: 24px; }
+}
+
+/* Error de campo discreto bajo el input (igual que en login) */
+.field-error{
+  color:#dc2626;
+  font-size:.8rem;
+  margin-top:6px;
+  display:block;
+}
+
+/* Éxito con el mismo look azul/verde suave que ya usabas */
+.success-message{
+  background:#f0f9ff;
+  color:#166534;
+  padding:12px 16px;
+  border-radius:8px;
+  font-size:.9rem;
+  border:1px solid #bbf7d0;
+  border-left:4px solid #16a34a;
+  text-align:center;
+  font-weight:500;
+  margin-bottom:10px;
 }

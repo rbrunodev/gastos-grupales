@@ -1,26 +1,35 @@
 import { useEffect, useRef } from "react";
-import { Home, UserPlus, Bell, Settings, HelpCircle, User, X, LogOut } from "lucide-react";
+import { Home, UserPlus, Bell, Settings, HelpCircle, User, X, LogOut,Wallet,UserCircle2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export default function Sidebar({
-  isOpen,             // 👈 controla visibilidad en mobile
-  onToggle,           // 👈 abre/cierra
+  isOpen,
+  onToggle,
+  onClose, // Añadir esta prop como fallback
   currentScreen,
   onNavigate,
   onCreateGroup,
-  onShowReminders,
+  onShowPersonalBalance,
+  selectedGroupId,
+  onViewGroup,
   className = "",
 }) {
   const closeBtnRef = useRef(null);
   const { user, logout } = useAuth();
 
+  // Función helper para cerrar sidebar
+  const handleClose = () => {
+    if (onToggle) onToggle();
+    else if (onClose) onClose();
+  };
+
   // Cerrar con ESC en mobile y enfocar el botón cerrar al abrir
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape" && isOpen) onToggle?.(); };
+    const onKey = (e) => { if (e.key === "Escape" && isOpen) handleClose(); };
     window.addEventListener("keydown", onKey);
     if (isOpen) closeBtnRef.current?.focus();
     return () => window.removeEventListener("keydown", onKey);
-  }, [isOpen, onToggle]);
+  }, [isOpen]);
 
   const itemBase = "w-full flex items-center gap-3 px-4 py-3 rounded-2xl border transition";
   const active   = "bg-gray-900 text-white border-gray-900";
@@ -32,13 +41,12 @@ export default function Sidebar({
       {isOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/40 md:hidden"
-          onClick={onToggle}
+          onClick={handleClose}
           aria-hidden="true"
         />
       )}
 
       <aside
-        // Drawer en mobile (slide), fijo en md+
         className={[
           "fixed inset-y-0 left-0 z-40",
           "transform transition-transform duration-300",
@@ -60,9 +68,8 @@ export default function Sidebar({
               <p className="text-sm text-gray-500">Acciones rápidas</p>
             </div>
 
-            {/* Botón cerrar: visible en mobile, oculto en md+ (opcional) */}
             <button
-              onClick={onToggle}
+              onClick={handleClose}
               ref={closeBtnRef}
               className="p-2 rounded-full hover:bg-gray-100 transition md:hidden"
               aria-label="Cerrar menú"
@@ -72,24 +79,44 @@ export default function Sidebar({
           </div>
 
           {/* Items */}
+                   {/* User info and logout */}
+            <div className="px-2 py-2 rounded-2xl bg-gray-50">
+              <div className="flex items-center gap-3 px-2 py-2 mb-2">
+                <div className="w-10 h-10 rounded-full bg-blue-100 grid place-items-center">
+                  <UserCircle2 className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="text-left flex-1">
+                  <p className="font-medium text-gray-800 text-sm">{user?.username}</p>
+                  <p className="text-xs text-gray-500">@{user?.username}</p>
+                </div>
+              </div>
+              
+            </div>
+
           <nav className="flex-1 p-3 space-y-3 overflow-y-auto">
             <button
-              onClick={() => { onNavigate?.("home"); onToggle?.(); }}
-              className={`${itemBase} ${currentScreen === "home" ? active : idle}`}
+              onClick={() => {
+                onNavigate?.("home");
+                handleClose();
+              }}
+              className={`${itemBase} ${currentScreen === "groups" || currentScreen === "home" ? active : idle}`}
             >
               <div className="w-10 h-10 rounded-full bg-blue-100 grid place-items-center">
                 <Home className="w-5 h-5 text-blue-600" />
               </div>
               <div className="text-left">
                 <p className="font-medium">Inicio</p>
-                <p className={`text-xs ${currentScreen === "home" ? "text-white/70" : "text-gray-500"}`}>
+                <p className={`text-xs ${currentScreen === "groups" || currentScreen === "home" ? "text-white/70" : "text-gray-500"}`}>
                   Ver todos mis grupos
                 </p>
               </div>
             </button>
 
             <button
-              onClick={() => { onCreateGroup?.(); onToggle?.(); }}
+              onClick={() => {
+                onCreateGroup?.();
+                handleClose();
+              }}
               className={`${itemBase} ${idle}`}
             >
               <div className="w-10 h-10 rounded-full bg-green-100 grid place-items-center">
@@ -102,22 +129,28 @@ export default function Sidebar({
             </button>
 
             <button
-              onClick={() => { onShowReminders?.(); onToggle?.(); }}
+              onClick={() => {
+                onShowPersonalBalance?.();
+                handleClose();
+              }}
               className={`${itemBase} ${idle}`}
             >
               <div className="w-10 h-10 rounded-full bg-orange-100 grid place-items-center">
-                <Bell className="w-5 h-5 text-orange-600" />
+                <Wallet className="w-5 h-5 text-orange-600" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-gray-800">Recordatorios</p>
-                <p className="text-xs text-gray-500">Deudas pendientes</p>
+                <p className="font-medium text-gray-800">Balance Personal</p>
+                <p className="text-xs text-gray-500">Resumen financiero</p>
               </div>
             </button>
 
             <div className="border-t border-gray-100 my-2 mx-2" />
 
             <button
-              onClick={() => { onNavigate?.("profile"); onToggle?.(); }}
+              onClick={() => {
+                onNavigate?.("profile");
+                handleClose();
+              }}
               className={`${itemBase} ${currentScreen === "profile" ? active : idle}`}
             >
               <div className="w-10 h-10 rounded-full bg-purple-100 grid place-items-center">
@@ -132,7 +165,10 @@ export default function Sidebar({
             </button>
 
             <button
-              onClick={() => { onNavigate?.("settings"); onToggle?.(); }}
+              onClick={() => {
+                onNavigate?.("settings");
+                handleClose();
+              }}
               className={`${itemBase} ${currentScreen === "settings" ? active : idle}`}
             >
               <div className="w-10 h-10 rounded-full bg-gray-100 grid place-items-center">
@@ -147,7 +183,10 @@ export default function Sidebar({
             </button>
 
             <button
-              onClick={() => { onNavigate?.("help"); onToggle?.(); }}
+              onClick={() => {
+                onNavigate?.("help");
+                handleClose();
+              }}
               className={`${itemBase} ${currentScreen === "help" ? active : idle}`}
             >
               <div className="w-10 h-10 rounded-full bg-cyan-100 grid place-items-center">
@@ -160,29 +199,18 @@ export default function Sidebar({
                 </p>
               </div>
             </button>
-
-            <div className="border-t border-gray-100 my-2 mx-2" />
-
-            {/* User info and logout */}
-            <div className="px-2 py-2 rounded-2xl bg-gray-50">
-              <div className="flex items-center gap-3 px-2 py-2 mb-2">
-                <div className="w-10 h-10 rounded-full bg-blue-100 grid place-items-center">
-                  <User className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="text-left flex-1">
-                  <p className="font-medium text-gray-800 text-sm">{user?.name}</p>
-                  <p className="text-xs text-gray-500">@{user?.username}</p>
-                </div>
-              </div>
-              
-              <button
-                onClick={() => { logout(); onToggle?.(); }}
+            <button
+                onClick={() => {
+                  logout();
+                  handleClose();
+                }}
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 border border-red-100 hover:border-red-200 transition text-red-600"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="font-medium text-sm">Cerrar Sesión</span>
               </button>
-            </div>
+          
+          <div className="border-t border-gray-100 my-2 mx-2" />
           </nav>
 
           {/* Footer */}
