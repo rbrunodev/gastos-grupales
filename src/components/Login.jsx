@@ -181,7 +181,7 @@ const Login = ({ onSwitchToRegister }) => {
           </div>
 
           {/* Demo users (tu bloque, lo dejo igual) */}
-          <div className="mt-2 rounded-xl border border-dashed border-blue-200 px-4 py-3">
+          {/* <div className="mt-2 rounded-xl border border-dashed border-blue-200 px-4 py-3">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-blue-700 mb-2">
               Usuarios de demostración
             </h4>
@@ -196,7 +196,7 @@ const Login = ({ onSwitchToRegister }) => {
                 <strong>test</strong> / test
               </div>
             </div>
-          </div>
+          </div> */}
 
         </div>
       </div>
