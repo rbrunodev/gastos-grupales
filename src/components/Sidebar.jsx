@@ -164,7 +164,7 @@ export default function Sidebar({
               </div>
             </button>
 
-            <button
+            {/* <button
               onClick={() => {
                 onNavigate?.("settings");
                 handleClose();
@@ -180,7 +180,7 @@ export default function Sidebar({
                   Preferencias y ajustes
                 </p>
               </div>
-            </button>
+            </button> */}
 
             <button
               onClick={() => {

@@ -123,45 +123,6 @@ export default function Profile() {
           </div>
         </div>
       </div>
-
-      {/* Próximas funcionalidades */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
-        <div className="flex items-start">
-          <div className="flex-shrink-0">
-            <AlertCircle className="h-6 w-6 text-blue-600" />
-          </div>
-          <div className="ml-3">
-            <h3 className="text-lg font-medium text-blue-900 mb-2">Próximamente: Edición de Perfil</h3>
-            <p className="text-blue-800 mb-4">
-              Estamos trabajando en nuevas funcionalidades para tu perfil.
-            </p>
-            <ul className="list-disc list-inside text-blue-700 space-y-1 text-sm">
-              <li>Cambiar tu nombre e info personal</li>
-              <li>Actualizar foto de perfil</li>
-              <li>Preferencias de notificaciones</li>
-              <li>Privacidad de la cuenta</li>
-              <li>Historial detallado de gastos</li>
-              <li>Exportar reportes</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Acciones */}
-      <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Acciones de Cuenta</h3>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg cursor-not-allowed" disabled>
-            Editar Perfil (Próximamente)
-          </button>
-          <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg cursor-not-allowed" disabled>
-            Cambiar Contraseña (Próximamente)
-          </button>
-          <button className="border border-red-300 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg cursor-not-allowed" disabled>
-            Eliminar Cuenta (Próximamente)
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

@@ -157,13 +157,13 @@ const AppContent = () => {
             />
           )}
           {currentView === 'profile' && <Profile />}
-          {currentView === 'settings' && (
+          {/* {currentView === 'settings' && (
             <Settings
               theme={theme}
               setTheme={setTheme}
               onBack={() => setCurrentView('groups')} 
             />
-          )}
+          )} */}
           {currentView === 'help' && (
             <Help onBack={() => setCurrentView('groups')} />
           )}
