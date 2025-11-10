@@ -71,9 +71,7 @@ export default function AddExpenseModal({ open, onClose, group, onAdd }) {
   const selectNone = () => setSplitWith([]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log("🔥 handleSubmit called");
-    
+    e.preventDefault();    
     setError("");
 
     if (!description.trim()) {

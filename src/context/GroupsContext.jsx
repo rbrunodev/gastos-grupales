@@ -189,6 +189,26 @@ const removePayment = async (groupId, paymentId) => {
   }
 };
 
+const deleteExpense = async (groupId, expenseId) => {
+  try {
+    const res = await fetch(`${API_URL}/expenses/${expenseId}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+
+    // Recargar grupos para traer la lista sin ese gasto
+    await loadUserGroups();
+    return { success: true };
+  } catch (e) {
+    console.error('Error eliminando gasto:', e);
+    return { success: false, message: e.message || 'No se pudo eliminar el gasto' };
+  }
+};
+
 
   const getGroupById = (groupId) => {
     return groups.find(group => group.id === parseInt(groupId));
@@ -297,6 +317,7 @@ const calculateBalances = (group) => {
     error,
     createGroup,
     addExpense,
+    deleteExpense,
     getGroupById,
     getAllUsers,
     calculateBalances,

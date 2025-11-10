@@ -1,14 +1,61 @@
 import React, { useState } from "react";
 import { useGroups } from "../context/GroupsContext";
-import { Users, DollarSign, TrendingUp, AlertCircle, MoreVertical } from "lucide-react";
+import { Users, DollarSign, TrendingUp, AlertCircle, MoreVertical,Trash2} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 
+function ConfirmDialog({ open, title, message, onCancel, onConfirm }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold">{title}</h3>
+        </div>
+        <p className="mt-3 text-slate-600">{message}</p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="rounded-xl border border-slate-200 px-4 py-2 text-slate-700 hover:bg-slate-50"
+          >
+            No, conservar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="rounded-xl bg-rose-600 px-4 py-2 font-medium text-white hover:bg-rose-700"
+          >
+            Sí, eliminar
+          </button>
+        </div>
+        <p className="mt-3 text-xs text-slate-400">
+          * Esta acción quitará el gasto y recalculará balances y liquidaciones.
+        </p>
+      </div>
+    </div>
+  );
+}
 export default function GroupDetail({ group, onBack, onAddExpense }) {
-const { calculateBalances, calculateSettlements, isGroupBalanced, addPayment, removePayment } = useGroups();
+const { calculateBalances, calculateSettlements, isGroupBalanced, addPayment, removePayment,deleteExpense } = useGroups();
 const { user } = useAuth(); 
 
 const [openMenu, setOpenMenu] = useState(null); 
+const [confirmDel, setConfirmDel] = useState({ open: false, expense: null });
+const openConfirmDeleteExpense = (expense) =>
+  setConfirmDel({ open: true, expense });
+
+const closeConfirmDeleteExpense = () =>
+  setConfirmDel({ open: false, expense: null });
+
+const handleConfirmDeleteExpense = async () => {
+  if (confirmDel.expense) {
+    const r = await deleteExpense(group.id, confirmDel.expense.id);
+    if (!r.success) {
+      console.log(r);
+      alert(r.message || "No se pudo eliminar el gasto");
+    }
+  }
+  closeConfirmDeleteExpense();
+};
 
 function toggleMenu(i) {
   setOpenMenu(openMenu === i ? null : i);
@@ -313,31 +360,59 @@ async function handleCopyAmount(amount) {
 
       {/* Gastos */}
       <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Gastos Recientes</h2>
-        {group.expenses?.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">No hay gastos registrados</p>
-        ) : (
-          <div className="space-y-3">
-            {group.expenses?.map((expense) => (
-              <div
-                key={expense.id}
-                className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">{expense.description}</p>
-                  <p className="text-sm text-gray-600">
-                    Pagado por {expense.paid_by_username} • Dividido entre{" "}
-                    {expense.splitBetween?.join(", ")}
-                  </p>
-                </div>
-                <span className="font-semibold text-gray-900">
-                  ${expense.amount.toFixed(2)}
-                </span>
-              </div>
-            ))}
+  <h2 className="text-lg font-semibold text-gray-900 mb-4">Gastos Recientes</h2>
+
+  {group.expenses?.length === 0 ? (
+    <p className="text-gray-500 text-center py-4">No hay gastos registrados</p>
+  ) : (
+    <div className="space-y-3">
+      {group.expenses?.map((expense) => {
+        // (Opcional) Solo el dueño o quien pagó puede borrar:
+        // const canDelete = user?.username === expense.paid_by_username;
+        const canDelete = true; // o tu regla
+
+        return (
+          <div
+            key={expense.id}
+            className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+          >
+            <div>
+              <p className="font-medium text-gray-900">{expense.description}</p>
+              <p className="text-sm text-gray-600">
+                Pagado por {expense.paid_by_username} • Dividido entre{" "}
+                {expense.splitBetween?.join(", ")}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="font-semibold text-gray-900">
+                ${expense.amount.toFixed(2)}
+              </span>
+              {canDelete && (
+                <button
+                  onClick={() => openConfirmDeleteExpense(expense)}
+                  className="inline-flex items-center gap-1 rounded-xl border border-rose-200 px-3 py-1.5 text-rose-700 hover:bg-rose-50"
+                  title="Eliminar gasto"
+                >
+                  <Trash2 size={18} />
+                  Eliminar
+                </button>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+        );
+      })}
+    </div>
+  )}
+
+  <ConfirmDialog
+    open={confirmDel.open}
+    title="¿Eliminar este gasto?"
+    message="Se removerá definitivamente y recalcularemos los balances. Si el gasto equilibraba deudas, podrían reabrirse liquidaciones."
+    onCancel={closeConfirmDeleteExpense}
+    onConfirm={handleConfirmDeleteExpense}
+  />
+</div>
     </div>
   );
 }

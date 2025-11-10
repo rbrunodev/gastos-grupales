@@ -335,6 +335,31 @@ app.post('/api/expenses', (req, res) => {
   });
 });
 
+// Eliminar gasto
+app.delete('/api/expenses/:id', (req, res) => {
+  const { id } = req.params;
+
+  // Si NO confías en que siempre sea número:
+  const expenseId = Number(id);
+  if (!Number.isInteger(expenseId)) {
+    return res.status(400).send('ID de gasto inválido');
+  }
+
+  // Con PRAGMA foreign_keys=ON, borra en cascada participantes_gasto
+  db.run('DELETE FROM gastos WHERE id = ?', [expenseId], function (err) {
+    if (err) {
+      console.error('DELETE /api/expenses error:', err);
+      return res.status(500).send('No se pudo eliminar el gasto');
+    }
+    if (this.changes === 0) {
+      return res.status(404).send('Gasto no encontrado');
+    }
+    // 204 = No Content
+    return res.status(204).end();
+  });
+});
+
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor backend corriendo en http://localhost:${PORT}`);
 });
