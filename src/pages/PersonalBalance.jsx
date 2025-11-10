@@ -231,9 +231,9 @@ export default function PersonalBalance({ onBack, onViewGroup }) {
                     >
                       Ver Grupo
                     </button>
-                    <button className="text-xs border border-green-600 text-green-600 hover:bg-green-50 px-3 py-1 rounded-full transition-colors">
+                    {/* <button className="text-xs border border-green-600 text-green-600 hover:bg-green-50 px-3 py-1 rounded-full transition-colors">
                       Enviar Recordatorio
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               </div>
