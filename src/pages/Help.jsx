@@ -38,9 +38,9 @@ const faqs = [
         "Sí. Los datos se almacenan de forma segura y solo son accesibles por vos y los miembros de tus grupos.",
     },
     {
-    question: "¿Puedo editar o eliminar gastos?",
+    question: "¿Puedo eliminar gastos?",
     answer:
-        "Próximamente. Mientras tanto podés crear un gasto de ajuste.",
+        "Sí. Desde el detalle del grupo, podés eliminar gastos que hayas agregado. Esto actualizará automáticamente los balances del grupo.",
     },
 ];
 
